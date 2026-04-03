@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import ThemeRegistry from "@/theme/ThemeRegistry";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -43,6 +44,14 @@ export default function RootLayout({
           <main className="flex-1">{children}</main>
           <Footer />
         </ThemeRegistry>
+        <Script id="nagishli-config" strategy="beforeInteractive">
+          {`nagishli_config = { language: "en", color: "blue" };`}
+        </Script>
+        <Script
+          src="/nagishli_beta.js?v=3.0b"
+          strategy="afterInteractive"
+          charSet="utf-8"
+        />
       </body>
     </html>
   );
