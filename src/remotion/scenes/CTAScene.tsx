@@ -68,9 +68,9 @@ export const CTAScene: React.FC = () => {
           zIndex: 1,
         }}
       >
-        Let's Build the
+        Ready to
         <br />
-        <span style={{ color: "#a78bfa" }}>Future Together</span>
+        <span style={{ color: "#a78bfa" }}>Ditch Wix?</span>
       </div>
 
       <div
@@ -85,7 +85,7 @@ export const CTAScene: React.FC = () => {
           zIndex: 1,
         }}
       >
-        www.company.com
+        convertyoursite.com
       </div>
 
       <div
@@ -104,7 +104,7 @@ export const CTAScene: React.FC = () => {
           zIndex: 1,
         }}
       >
-        Get In Touch
+        Get a Free Estimate
       </div>
     </AnimatedBackground>
   );

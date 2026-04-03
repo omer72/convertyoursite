@@ -70,9 +70,9 @@ export const MissionScene: React.FC = () => {
             fontWeight: 300,
           }}
         >
-          We build technology that empowers businesses to move faster, think
-          bigger, and deliver exceptional experiences to their customers around
-          the world.
+          We transform outdated Wix websites into lightning-fast, modern web
+          experiences — beautifully designed, fully responsive, and hosted for
+          free.
         </div>
       </div>
     </AnimatedBackground>

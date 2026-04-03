@@ -3,10 +3,10 @@ import { useCurrentFrame, interpolate, Easing } from "remotion";
 import { AnimatedBackground } from "../components/AnimatedBackground";
 
 const stats = [
-  { value: "500+", label: "Clients Worldwide" },
-  { value: "98%", label: "Client Satisfaction" },
-  { value: "50M+", label: "Users Served" },
-  { value: "12", label: "Years of Excellence" },
+  { value: "10x", label: "Faster Load Times" },
+  { value: "$0/mo", label: "Hosting Cost" },
+  { value: "100%", label: "Mobile Responsive" },
+  { value: "SEO", label: "Ready Out of the Box" },
 ];
 
 export const StatsScene: React.FC = () => {

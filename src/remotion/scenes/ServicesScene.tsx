@@ -3,10 +3,10 @@ import { useCurrentFrame, interpolate, Easing } from "remotion";
 import { AnimatedBackground } from "../components/AnimatedBackground";
 
 const services = [
-  { icon: "\u{1F680}", title: "Product Development", desc: "End-to-end digital products" },
-  { icon: "\u{1F916}", title: "AI & Automation", desc: "Smart solutions at scale" },
-  { icon: "\u2601\uFE0F", title: "Cloud Infrastructure", desc: "Reliable & performant systems" },
-  { icon: "\u{1F4CA}", title: "Data Analytics", desc: "Insights that drive growth" },
+  { icon: "\uD83D\uDD04", title: "Wix Migration", desc: "Seamless transition from Wix to modern stack" },
+  { icon: "\uD83C\uDFA8", title: "Modern Design", desc: "Sleek, responsive UI with Tailwind & React" },
+  { icon: "\u26A1", title: "Blazing Fast", desc: "Static-site performance with Next.js" },
+  { icon: "\uD83D\uDCB0", title: "Free Hosting", desc: "GitHub Pages / Netlify — $0/month" },
 ];
 
 export const ServicesScene: React.FC = () => {

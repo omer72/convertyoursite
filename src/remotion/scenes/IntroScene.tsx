@@ -81,7 +81,7 @@ export const IntroScene: React.FC = () => {
           }}
         >
           <span style={{ fontSize: 60, color: "white", fontWeight: 800 }}>
-            C
+            cYS
           </span>
         </div>
       </div>
@@ -97,7 +97,7 @@ export const IntroScene: React.FC = () => {
           letterSpacing: -2,
         }}
       >
-        Company
+        convertYourSite
       </div>
 
       <div
@@ -113,7 +113,7 @@ export const IntroScene: React.FC = () => {
           textTransform: "uppercase",
         }}
       >
-        Innovation Starts Here
+        From Wix to Wow
       </div>
     </AnimatedBackground>
   );
