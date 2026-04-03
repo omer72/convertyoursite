@@ -17,6 +17,7 @@ interface PortfolioProject {
   beforeImage?: { src: string; alt: string };
   afterImage?: { src: string; alt: string };
   image?: { src: string; alt: string };
+  techStack?: string[];
 }
 
 const projects: PortfolioProject[] = [
@@ -32,6 +33,7 @@ const projects: PortfolioProject[] = [
       src: "/images/portfolio/appcard-parking.webp",
       alt: "Smart Parking by AppCard — live dashboard",
     },
+    techStack: ["React", "Node.js", "Tailwind CSS"],
   },
   {
     id: "liat-leshem",
@@ -49,6 +51,7 @@ const projects: PortfolioProject[] = [
       src: "/images/portfolio/liat-leshem-after.webp",
       alt: "Liat Leshem site after — new Next.js version",
     },
+    techStack: ["Next.js", "Tailwind CSS", "RTL"],
   },
   {
     id: "bialystok",
@@ -66,6 +69,7 @@ const projects: PortfolioProject[] = [
       src: "/images/portfolio/bialystok-after.webp",
       alt: "Bialystok Association site after — new Next.js version",
     },
+    techStack: ["Next.js", "Netlify", "A11y"],
   },
 ];
 
@@ -94,21 +98,47 @@ function ScrollReveal({ children }: { children: React.ReactNode }) {
   return (
     <div
       ref={ref}
-      className="opacity-0 translate-y-8 transition-all duration-700 ease-out"
+      className="opacity-0 translate-y-8 transition-all duration-700 ease-out motion-reduce:transition-none motion-reduce:transform-none motion-reduce:opacity-100 motion-reduce:translate-y-0"
     >
       {children}
     </div>
   );
 }
 
+function ComingSoonPlaceholder({ clientName }: { clientName: string }) {
+  return (
+    <div className="aspect-video overflow-hidden rounded-xl shadow-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center opacity-60">
+      <span className="text-gray-500 dark:text-gray-400 text-lg font-medium">
+        Coming Soon
+      </span>
+    </div>
+  );
+}
+
+function SliderLabels() {
+  return (
+    <>
+      <span className="absolute top-3 left-3 z-10 rounded-full bg-black/50 backdrop-blur-sm px-3 py-1 text-xs font-semibold text-white">
+        Before
+      </span>
+      <span className="absolute top-3 right-3 z-10 rounded-full bg-black/50 backdrop-blur-sm px-3 py-1 text-xs font-semibold text-white">
+        After
+      </span>
+    </>
+  );
+}
+
 function PortfolioItem({ item }: { item: PortfolioProject }) {
   const hasSlider = item.beforeImage && item.afterImage;
+  const hasImage = !!item.image;
+  const hasVisual = hasSlider || hasImage;
 
   return (
     <ScrollReveal>
       <article aria-label={`Portfolio: ${item.clientName}`}>
         {hasSlider ? (
-          <div className="aspect-video overflow-hidden rounded-xl shadow-lg">
+          <div className="relative aspect-video overflow-hidden rounded-xl shadow-lg transition-shadow duration-300 hover:shadow-[0_0_25px_rgba(59,130,246,0.2)]">
+            <SliderLabels />
             <ReactCompareSlider
               aria-label={`Drag to compare before and after website for ${item.clientName}`}
               keyboardIncrement="5%"
@@ -137,27 +167,31 @@ function PortfolioItem({ item }: { item: PortfolioProject }) {
               }
             />
           </div>
-        ) : item.image ? (
+        ) : hasImage ? (
           <div className="aspect-video overflow-hidden rounded-xl shadow-lg">
             <img
-              src={item.image.src}
-              alt={item.image.alt}
+              src={item.image!.src}
+              alt={item.image!.alt}
               className="h-full w-full object-cover"
             />
           </div>
-        ) : null}
+        ) : (
+          <ComingSoonPlaceholder clientName={item.clientName} />
+        )}
 
         {/* Glass metadata card */}
-        <div className="mt-4 rounded-xl bg-white/80 dark:bg-gray-800/60 backdrop-blur-md border border-gray-200 dark:border-gray-700 p-5">
+        <div className={`mt-4 rounded-xl bg-white/80 dark:bg-gray-800/60 backdrop-blur-md border border-gray-200 dark:border-gray-700 p-5${!hasVisual ? " opacity-60" : ""}`}>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">
             {item.clientName}
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {item.role}
           </p>
-          <p className="text-gray-600 dark:text-gray-300 mt-2 text-sm leading-relaxed">
-            {item.description}
-          </p>
+          {hasVisual && (
+            <p className="text-gray-600 dark:text-gray-300 mt-2 text-sm leading-relaxed">
+              {item.description}
+            </p>
+          )}
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <span className="inline-block rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-1 text-sm font-semibold text-white">
               {item.result}
@@ -174,6 +208,18 @@ function PortfolioItem({ item }: { item: PortfolioProject }) {
               </a>
             )}
           </div>
+          {item.techStack && item.techStack.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {item.techStack.map((tech) => (
+                <span
+                  key={tech}
+                  className="rounded-full border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700/50 px-2.5 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-300"
+                >
+                  {tech}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </article>
     </ScrollReveal>
