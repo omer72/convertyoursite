@@ -1,6 +1,6 @@
 import { buildMetadata } from "@/components/layout/seo";
 import PortfolioHero from "@/components/portfolio/PortfolioHero";
-import ProjectGrid from "@/components/portfolio/ProjectGrid";
+import PortfolioList from "@/components/portfolio/PortfolioList";
 import PortfolioCTA from "@/components/portfolio/PortfolioCTA";
 
 export const metadata = buildMetadata({
@@ -14,7 +14,7 @@ export default function PortfolioPage() {
   return (
     <>
       <PortfolioHero />
-      <ProjectGrid />
+      <PortfolioList />
       <PortfolioCTA />
     </>
   );
