@@ -20,7 +20,7 @@ export default function VideoShowcase() {
             style={{ aspectRatio: "16/9", backgroundColor: "#0a0a2e" }}
           >
             <video
-              src={`${basePath}/company-reel.mp4`}
+              src={`${basePath}/company-reel.mp4?v=2`}
               autoPlay
               loop
               muted
