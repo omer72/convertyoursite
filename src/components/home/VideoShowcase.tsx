@@ -1,3 +1,5 @@
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 export default function VideoShowcase() {
   return (
     <section className="py-20 lg:py-28">
@@ -18,7 +20,7 @@ export default function VideoShowcase() {
             style={{ aspectRatio: "16/9", backgroundColor: "#0a0a2e" }}
           >
             <video
-              src="/company-reel.mp4"
+              src={`${basePath}/company-reel.mp4`}
               autoPlay
               loop
               muted
