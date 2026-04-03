@@ -9,6 +9,7 @@ import RestaurantIcon from "@mui/icons-material/Restaurant";
 import FitnessCenterIcon from "@mui/icons-material/FitnessCenter";
 import RecordVoiceOverIcon from "@mui/icons-material/RecordVoiceOver";
 import HistoryEduIcon from "@mui/icons-material/HistoryEdu";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
 interface Project {
   id: string;
@@ -20,6 +21,8 @@ interface Project {
   metric: string;
   color: string;
   liveUrl?: string;
+  featured?: boolean;
+  migrationFrom?: string;
 }
 
 const projects: Project[] = [
@@ -34,6 +37,8 @@ const projects: Project[] = [
     metric: "Full Code Ownership",
     color: "from-amber-500 to-yellow-600",
     liveUrl: "https://omer72.github.io/liat-leshem-site/",
+    featured: true,
+    migrationFrom: "Wix",
   },
   {
     id: "bialystok-heritage",
@@ -46,6 +51,8 @@ const projects: Project[] = [
     metric: "Accessibility Compliant",
     color: "from-blue-500 to-indigo-500",
     liveUrl: "https://bialystoksite.netlify.app/",
+    featured: true,
+    migrationFrom: "Wix",
   },
   {
     id: "flavor-house",
@@ -115,6 +122,155 @@ const projects: Project[] = [
   },
 ];
 
+const featuredProjects = projects.filter((p) => p.featured);
+const otherProjects = projects.filter((p) => !p.featured);
+
+function FeaturedCard({ project }: { project: Project }) {
+  return (
+    <div className="group relative rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10 dark:hover:shadow-blue-400/5">
+      {/* Gradient border effect */}
+      <div
+        className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${project.color} opacity-20 group-hover:opacity-30 transition-opacity`}
+      />
+      <div className="absolute inset-[1px] rounded-2xl bg-white dark:bg-gray-900" />
+
+      <div className="relative">
+        {/* Gradient top bar */}
+        <div className={`h-2 bg-gradient-to-r ${project.color}`} />
+
+        <div className="p-6 sm:p-8">
+          {/* Top row: icon, badges */}
+          <div className="flex items-start justify-between mb-5">
+            <div
+              className={`w-14 h-14 rounded-xl bg-gradient-to-br ${project.color} bg-opacity-10 flex items-center justify-center shadow-sm`}
+            >
+              <project.icon className="!w-7 !h-7 text-white" />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 px-2.5 py-1 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                Live Project
+              </span>
+            </div>
+          </div>
+
+          {/* Migration indicator */}
+          {project.migrationFrom && (
+            <div className="flex items-center gap-2 mb-4 text-xs">
+              <span className="font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded line-through decoration-red-400">
+                {project.migrationFrom}
+              </span>
+              <ArrowForwardIcon className="!w-3.5 !h-3.5 text-gray-400" />
+              <span className="font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded">
+                Next.js
+              </span>
+            </div>
+          )}
+
+          {/* Title + description */}
+          <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-3">
+            {project.title}
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base leading-relaxed mb-5">
+            {project.description}
+          </p>
+
+          {/* Tech stack */}
+          <div className="flex flex-wrap gap-2 mb-5">
+            {project.techStack.map((tech) => (
+              <span
+                key={tech}
+                className="text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1 rounded-md"
+              >
+                {tech}
+              </span>
+            ))}
+          </div>
+
+          {/* Metric + live link */}
+          <div className="flex items-center justify-between pt-5 border-t border-gray-100 dark:border-gray-800">
+            <span className="text-sm font-bold text-green-600 dark:text-green-400">
+              {project.metric}
+            </span>
+            {project.liveUrl && (
+              <a
+                href={project.liveUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+              >
+                Visit Live Site
+                <OpenInNewIcon className="!w-4 !h-4" />
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProjectCard({ project }: { project: Project }) {
+  return (
+    <div className="group bg-white dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-lg hover:border-blue-200 dark:hover:border-blue-800 transition-all duration-300">
+      {/* Color bar */}
+      <div className={`h-1.5 bg-gradient-to-r ${project.color}`} />
+
+      <div className="p-6">
+        {/* Icon + category */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="w-12 h-12 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+            <project.icon className="!w-6 !h-6 text-blue-600 dark:text-blue-400" />
+          </div>
+          <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2.5 py-1 rounded-full">
+            {project.category}
+          </span>
+        </div>
+
+        {/* Title + description */}
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+          {project.title}
+        </h3>
+        <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-4">
+          {project.description}
+        </p>
+
+        {/* Tech stack */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {project.techStack.map((tech) => (
+            <span
+              key={tech}
+              className="text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded"
+            >
+              {tech}
+            </span>
+          ))}
+        </div>
+
+        {/* Metric + live link */}
+        <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
+          <span className="text-sm font-semibold text-green-600 dark:text-green-400">
+            {project.metric}
+          </span>
+          {project.liveUrl ? (
+            <a
+              href={project.liveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              Visit Site
+              <OpenInNewIcon className="!w-4 !h-4" />
+            </a>
+          ) : (
+            <OpenInNewIcon className="!w-4 !h-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ProjectGrid() {
   return (
     <section className="py-20 lg:py-28">
@@ -129,69 +285,30 @@ export default function ProjectGrid() {
           </p>
         </div>
 
+        {/* Featured projects — prominent 2-col row */}
+        {featuredProjects.length > 0 && (
+          <div className="grid md:grid-cols-2 gap-8 mb-12">
+            {featuredProjects.map((project) => (
+              <FeaturedCard key={project.id} project={project} />
+            ))}
+          </div>
+        )}
+
+        {/* Divider */}
+        {featuredProjects.length > 0 && otherProjects.length > 0 && (
+          <div className="flex items-center gap-4 mb-12">
+            <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+            <span className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+              More Projects
+            </span>
+            <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+          </div>
+        )}
+
+        {/* Other projects — standard 3-col grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {projects.map((project) => (
-            <div
-              key={project.id}
-              className="group bg-white dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-lg hover:border-blue-200 dark:hover:border-blue-800 transition-all duration-300"
-            >
-              {/* Color bar */}
-              <div
-                className={`h-1.5 bg-gradient-to-r ${project.color}`}
-              />
-
-              <div className="p-6">
-                {/* Icon + category */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
-                    <project.icon className="!w-6 !h-6 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2.5 py-1 rounded-full">
-                    {project.category}
-                  </span>
-                </div>
-
-                {/* Title + description */}
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  {project.title}
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-4">
-                  {project.description}
-                </p>
-
-                {/* Tech stack */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {project.techStack.map((tech) => (
-                    <span
-                      key={tech}
-                      className="text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded"
-                    >
-                      {tech}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Metric + live link */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
-                  <span className="text-sm font-semibold text-green-600 dark:text-green-400">
-                    {project.metric}
-                  </span>
-                  {project.liveUrl ? (
-                    <a
-                      href={project.liveUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                      Visit Site
-                      <OpenInNewIcon className="!w-4 !h-4" />
-                    </a>
-                  ) : (
-                    <OpenInNewIcon className="!w-4 !h-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                  )}
-                </div>
-              </div>
-            </div>
+          {otherProjects.map((project) => (
+            <ProjectCard key={project.id} project={project} />
           ))}
         </div>
       </div>
