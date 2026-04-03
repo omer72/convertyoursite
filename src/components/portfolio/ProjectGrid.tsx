@@ -7,8 +7,46 @@ import BrushIcon from "@mui/icons-material/Brush";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import RestaurantIcon from "@mui/icons-material/Restaurant";
 import FitnessCenterIcon from "@mui/icons-material/FitnessCenter";
+import RecordVoiceOverIcon from "@mui/icons-material/RecordVoiceOver";
+import HistoryEduIcon from "@mui/icons-material/HistoryEdu";
 
-const projects = [
+interface Project {
+  id: string;
+  icon: typeof WebIcon;
+  title: string;
+  category: string;
+  description: string;
+  techStack: string[];
+  metric: string;
+  color: string;
+  liveUrl?: string;
+}
+
+const projects: Project[] = [
+  {
+    id: "liat-leshem",
+    icon: RecordVoiceOverIcon,
+    title: "Liat Leshem — Voice Artist Portfolio",
+    category: "Wix Migration",
+    description:
+      "Redesigned a Wix-based portfolio for a bilingual voice-over artist and actress into a polished dark-and-gold Next.js site with RTL Hebrew support, scroll animations, and JSON-LD structured data for SEO.",
+    techStack: ["Next.js", "React", "MUI", "GitHub Pages"],
+    metric: "Full Code Ownership",
+    color: "from-amber-500 to-yellow-600",
+    liveUrl: "https://omer72.github.io/liat-leshem-site/",
+  },
+  {
+    id: "bialystok-heritage",
+    icon: HistoryEduIcon,
+    title: "Bialystok Vicinity Expats Israel",
+    category: "Wix Migration",
+    description:
+      "Migrated a nonprofit heritage organization from Wix to a modern stack on Netlify, delivering full code ownership, static-site performance, and Israeli web-accessibility compliance via the Nagishli widget.",
+    techStack: ["Next.js", "Tailwind CSS", "Netlify"],
+    metric: "Accessibility Compliant",
+    color: "from-blue-500 to-indigo-500",
+    liveUrl: "https://bialystoksite.netlify.app/",
+  },
   {
     id: "flavor-house",
     icon: RestaurantIcon,
@@ -133,12 +171,24 @@ export default function ProjectGrid() {
                   ))}
                 </div>
 
-                {/* Metric */}
+                {/* Metric + live link */}
                 <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
                   <span className="text-sm font-semibold text-green-600 dark:text-green-400">
                     {project.metric}
                   </span>
-                  <OpenInNewIcon className="!w-4 !h-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                  {project.liveUrl ? (
+                    <a
+                      href={project.liveUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      Visit Site
+                      <OpenInNewIcon className="!w-4 !h-4" />
+                    </a>
+                  ) : (
+                    <OpenInNewIcon className="!w-4 !h-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                  )}
                 </div>
               </div>
             </div>
