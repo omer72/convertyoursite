@@ -12,6 +12,7 @@ const quickLinks = [
   { label: "Portfolio", href: "/portfolio" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
+  { label: "Get Estimate", href: "/estimate" },
 ];
 
 const services = [

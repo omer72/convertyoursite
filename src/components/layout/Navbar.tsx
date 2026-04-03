@@ -18,6 +18,7 @@ const navLinks = [
   { label: "Portfolio", href: "/portfolio" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
+  { label: "Estimate", href: "/estimate" },
 ];
 
 export default function Navbar() {
@@ -29,7 +30,7 @@ export default function Navbar() {
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800 h-16">
+    <header className="sticky top-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-200/60 dark:border-gray-800/60 h-16 transition-colors duration-200">
       <nav className="max-w-7xl mx-auto px-6 flex items-center justify-between h-full">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 no-underline">
@@ -67,8 +68,19 @@ export default function Navbar() {
           <Button
             variant="contained"
             size="small"
-            href="/contact"
-            className="!bg-blue-600 !text-white !font-semibold !px-4 !py-2 !rounded-md !text-sm !normal-case hover:!bg-blue-700"
+            href="/estimate"
+            sx={{
+              bgcolor: "#2563eb",
+              color: "white",
+              fontWeight: 600,
+              px: 2,
+              py: 0.75,
+              borderRadius: "0.375rem",
+              fontSize: "0.875rem",
+              textTransform: "none",
+              boxShadow: "none",
+              "&:hover": { bgcolor: "#1d4ed8", boxShadow: "0 1px 3px rgb(0 0 0 / 0.1)" },
+            }}
           >
             Get Free Estimate
           </Button>
@@ -133,9 +145,18 @@ export default function Navbar() {
               <Button
                 variant="contained"
                 fullWidth
-                href="/contact"
+                href="/estimate"
                 onClick={() => setDrawerOpen(false)}
-                className="!bg-blue-600 !text-white !font-semibold !py-3 !rounded-md !normal-case hover:!bg-blue-700"
+                sx={{
+                  bgcolor: "#2563eb",
+                  color: "white",
+                  fontWeight: 600,
+                  py: 1.5,
+                  borderRadius: "0.375rem",
+                  textTransform: "none",
+                  boxShadow: "none",
+                  "&:hover": { bgcolor: "#1d4ed8" },
+                }}
               >
                 Get Free Estimate
               </Button>
