@@ -7,6 +7,8 @@ import {
 } from "react-compare-slider";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
 interface PortfolioProject {
   id: string;
   clientName: string;
@@ -30,7 +32,7 @@ const projects: PortfolioProject[] = [
     result: "Production Live",
     liveUrl: "https://chaniya-appcard.netlify.app/",
     image: {
-      src: "/images/portfolio/appcard-parking.webp",
+      src: `${basePath}/images/portfolio/appcard-parking.webp`,
       alt: "Smart Parking by AppCard — live dashboard",
     },
     techStack: ["React", "Node.js", "Tailwind CSS"],
@@ -44,11 +46,11 @@ const projects: PortfolioProject[] = [
     result: "Full Code Ownership",
     liveUrl: "https://omer72.github.io/liat-leshem-site/",
     beforeImage: {
-      src: "/images/portfolio/liat-leshem-before.webp",
+      src: `${basePath}/images/portfolio/liat-leshem-before.webp`,
       alt: "Liat Leshem site before — old Wix version",
     },
     afterImage: {
-      src: "/images/portfolio/liat-leshem-after.webp",
+      src: `${basePath}/images/portfolio/liat-leshem-after.webp`,
       alt: "Liat Leshem site after — new Next.js version",
     },
     techStack: ["Next.js", "Tailwind CSS", "RTL"],
@@ -62,11 +64,11 @@ const projects: PortfolioProject[] = [
     result: "Accessibility Compliant",
     liveUrl: "https://bialystoksite.netlify.app/",
     beforeImage: {
-      src: "/images/portfolio/bialystok-before.webp",
+      src: `${basePath}/images/portfolio/bialystok-before.webp`,
       alt: "Bialystok Association site before — old Wix version",
     },
     afterImage: {
-      src: "/images/portfolio/bialystok-after.webp",
+      src: `${basePath}/images/portfolio/bialystok-after.webp`,
       alt: "Bialystok Association site after — new Next.js version",
     },
     techStack: ["Next.js", "Netlify", "A11y"],
