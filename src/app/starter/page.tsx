@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
+import Fade from "@mui/material/Fade";
 import PasswordGate from "@/components/starter/PasswordGate";
 import StarterForm, { STORAGE_KEY } from "@/components/starter/StarterForm";
 import PipelineDashboard from "@/components/starter/PipelineDashboard";
@@ -67,30 +68,55 @@ export default function StarterPage() {
 
   if (auth === "checking") {
     return (
-      <Box className="min-h-[60vh] flex items-center justify-center">
-        <CircularProgress />
+      <Box
+        className="min-h-[60vh] flex items-center justify-center"
+        sx={{
+          bgcolor: (theme) =>
+            theme.palette.mode === "dark" ? "#0a0a0a" : "background.default",
+        }}
+      >
+        <CircularProgress
+          sx={{
+            color: (theme) =>
+              theme.palette.mode === "dark" ? "#06b6d4" : "primary.main",
+          }}
+        />
       </Box>
     );
   }
 
   if (auth === "unauthenticated") {
-    return <PasswordGate onAuthenticated={handleAuthenticated} />;
+    return (
+      <Fade in timeout={400}>
+        <Box>
+          <PasswordGate onAuthenticated={handleAuthenticated} />
+        </Box>
+      </Fade>
+    );
   }
 
   if (view === "form") {
     return (
-      <StarterForm
-        onProjectCreated={handleProjectCreated}
-        onBack={projects.length > 0 ? () => setView("dashboard") : undefined}
-      />
+      <Fade in timeout={350} key="form">
+        <Box>
+          <StarterForm
+            onProjectCreated={handleProjectCreated}
+            onBack={projects.length > 0 ? () => setView("dashboard") : undefined}
+          />
+        </Box>
+      </Fade>
     );
   }
 
   return (
-    <PipelineDashboard
-      projects={projects}
-      onNewProject={() => setView("form")}
-      onDeleteProject={handleDeleteProject}
-    />
+    <Fade in timeout={350} key="dashboard">
+      <Box>
+        <PipelineDashboard
+          projects={projects}
+          onNewProject={() => setView("form")}
+          onDeleteProject={handleDeleteProject}
+        />
+      </Box>
+    </Fade>
   );
 }

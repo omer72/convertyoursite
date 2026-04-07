@@ -2,6 +2,7 @@
 
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+import { useTheme } from "@mui/material/styles";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from "@mui/icons-material/Error";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -50,38 +51,58 @@ const STAGE_ICONS = [
   CelebrationIcon,
 ];
 
-const STAGE_COLORS: Record<StageStatus, { bg: string; icon: string; border: string }> = {
-  done: {
-    bg: "rgba(34,197,94,0.1)",
-    icon: "#22c55e",
-    border: "rgba(34,197,94,0.25)",
-  },
-  in_progress: {
-    bg: "rgba(37,99,235,0.08)",
-    icon: "#2563eb",
-    border: "rgba(37,99,235,0.25)",
-  },
-  error: {
-    bg: "rgba(239,68,68,0.08)",
-    icon: "#ef4444",
-    border: "rgba(239,68,68,0.25)",
-  },
-  pending: {
-    bg: "rgba(0,0,0,0.02)",
-    icon: "#9ca3af",
-    border: "rgba(0,0,0,0.06)",
-  },
-};
+function getStageColors(mode: "light" | "dark") {
+  const isDark = mode === "dark";
+  return {
+    done: {
+      bg: isDark ? "rgba(34,197,94,0.1)" : "rgba(34,197,94,0.08)",
+      icon: isDark ? "#4ade80" : "#22c55e",
+      border: isDark ? "rgba(34,197,94,0.2)" : "rgba(34,197,94,0.25)",
+      iconBg: isDark ? "rgba(34,197,94,0.15)" : "rgba(34,197,94,0.1)",
+    },
+    in_progress: {
+      bg: isDark ? "rgba(6,182,212,0.08)" : "rgba(37,99,235,0.06)",
+      icon: isDark ? "#22d3ee" : "#2563eb",
+      border: isDark ? "rgba(6,182,212,0.25)" : "rgba(37,99,235,0.25)",
+      iconBg: isDark ? "rgba(6,182,212,0.15)" : "rgba(37,99,235,0.1)",
+    },
+    error: {
+      bg: isDark ? "rgba(239,68,68,0.08)" : "rgba(239,68,68,0.06)",
+      icon: isDark ? "#f87171" : "#ef4444",
+      border: isDark ? "rgba(239,68,68,0.2)" : "rgba(239,68,68,0.25)",
+      iconBg: isDark ? "rgba(239,68,68,0.15)" : "rgba(239,68,68,0.1)",
+    },
+    pending: {
+      bg: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)",
+      icon: isDark ? "#4b5563" : "#9ca3af",
+      border: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.06)",
+      iconBg: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
+    },
+  } as const;
+}
 
-function StageStatusBadge({ status }: { status: StageStatus }) {
+function StageStatusBadge({ status, isDark }: { status: StageStatus; isDark: boolean }) {
   if (status === "done") {
-    return <CheckCircleIcon sx={{ fontSize: 16, color: "#22c55e" }} />;
+    return (
+      <CheckCircleIcon
+        sx={{ fontSize: 16, color: isDark ? "#4ade80" : "#22c55e" }}
+      />
+    );
   }
   if (status === "in_progress") {
-    return <CircularProgress size={14} sx={{ color: "#2563eb" }} />;
+    return (
+      <CircularProgress
+        size={14}
+        sx={{ color: isDark ? "#22d3ee" : "#2563eb" }}
+      />
+    );
   }
   if (status === "error") {
-    return <ErrorIcon sx={{ fontSize: 16, color: "#ef4444" }} />;
+    return (
+      <ErrorIcon
+        sx={{ fontSize: 16, color: isDark ? "#f87171" : "#ef4444" }}
+      />
+    );
   }
   return null;
 }
@@ -91,6 +112,10 @@ interface PipelineStepperProps {
 }
 
 export default function PipelineStepper({ stages }: PipelineStepperProps) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+  const colors = getStageColors(theme.palette.mode);
+
   const doneCount = stages.filter((s) => s.status === "done").length;
   const progress = Math.round((doneCount / stages.length) * 100);
 
@@ -103,8 +128,9 @@ export default function PipelineStepper({ stages }: PipelineStepperProps) {
             flex: 1,
             height: 6,
             borderRadius: 3,
-            bgcolor: "rgba(0,0,0,0.04)",
+            bgcolor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
             overflow: "hidden",
+            position: "relative",
           }}
         >
           <Box
@@ -112,8 +138,16 @@ export default function PipelineStepper({ stages }: PipelineStepperProps) {
               height: "100%",
               width: `${progress}%`,
               borderRadius: 3,
-              background: "linear-gradient(90deg, #2563eb 0%, #22c55e 100%)",
-              transition: "width 0.5s ease-out",
+              background: isDark
+                ? "linear-gradient(90deg, #06b6d4 0%, #4ade80 100%)"
+                : "linear-gradient(90deg, #2563eb 0%, #22c55e 100%)",
+              transition: "width 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
+              ...(progress > 0 &&
+                progress < 100 && {
+                  boxShadow: isDark
+                    ? "0 0 8px rgba(6,182,212,0.4)"
+                    : "0 0 6px rgba(37,99,235,0.3)",
+                }),
             }}
           />
         </Box>
@@ -121,7 +155,9 @@ export default function PipelineStepper({ stages }: PipelineStepperProps) {
           variant="body2"
           sx={{
             fontWeight: 600,
-            color: progress === 100 ? "#22c55e" : "#2563eb",
+            color: progress === 100
+              ? isDark ? "#4ade80" : "#22c55e"
+              : isDark ? "#22d3ee" : "#2563eb",
             minWidth: 40,
             textAlign: "right",
             fontSize: "0.8rem",
@@ -134,8 +170,9 @@ export default function PipelineStepper({ stages }: PipelineStepperProps) {
       {/* Stage list */}
       <Box className="space-y-1.5">
         {stages.map((stage, i) => {
-          const colors = STAGE_COLORS[stage.status];
+          const c = colors[stage.status];
           const StageIconComponent = STAGE_ICONS[i] || PlayArrowRoundedIcon;
+          const isActive = stage.status === "in_progress";
 
           return (
             <Box
@@ -145,11 +182,20 @@ export default function PipelineStepper({ stages }: PipelineStepperProps) {
                 p: 1.5,
                 borderRadius: "0.625rem",
                 border: "1px solid",
-                borderColor: colors.border,
-                bgcolor: colors.bg,
-                transition: "all 0.25s ease",
-                ...(stage.status === "in_progress" && {
-                  boxShadow: "0 0 0 1px rgba(37,99,235,0.1)",
+                borderColor: c.border,
+                bgcolor: c.bg,
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                ...(isActive && {
+                  boxShadow: isDark
+                    ? "0 0 0 1px rgba(6,182,212,0.1), 0 2px 8px -2px rgba(6,182,212,0.15)"
+                    : "0 0 0 1px rgba(37,99,235,0.1), 0 2px 8px -2px rgba(37,99,235,0.1)",
+                }),
+                "@keyframes subtle-glow": {
+                  "0%, 100%": { opacity: 1 },
+                  "50%": { opacity: 0.7 },
+                },
+                ...(isActive && {
+                  animation: "subtle-glow 2.5s ease-in-out infinite",
                 }),
               }}
             >
@@ -162,17 +208,16 @@ export default function PipelineStepper({ stages }: PipelineStepperProps) {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  bgcolor:
-                    stage.status === "pending"
-                      ? "rgba(0,0,0,0.03)"
-                      : `${colors.icon}15`,
+                  bgcolor: c.iconBg,
                   flexShrink: 0,
+                  transition: "background-color 0.3s ease",
                 }}
               >
                 <StageIconComponent
                   sx={{
                     fontSize: 18,
-                    color: colors.icon,
+                    color: c.icon,
+                    transition: "color 0.3s ease",
                   }}
                 />
               </Box>
@@ -182,13 +227,14 @@ export default function PipelineStepper({ stages }: PipelineStepperProps) {
                 <Typography
                   variant="body2"
                   sx={{
-                    fontWeight: stage.status === "in_progress" ? 700 : 500,
+                    fontWeight: isActive ? 700 : 500,
                     color:
                       stage.status === "pending"
                         ? "text.secondary"
                         : "text.primary",
                     fontSize: "0.825rem",
                     lineHeight: 1.3,
+                    transition: "color 0.3s ease",
                   }}
                   noWrap
                 >
@@ -205,8 +251,15 @@ export default function PipelineStepper({ stages }: PipelineStepperProps) {
               </Box>
 
               {/* Status badge */}
-              <Box sx={{ flexShrink: 0, width: 20, display: "flex", justifyContent: "center" }}>
-                <StageStatusBadge status={stage.status} />
+              <Box
+                sx={{
+                  flexShrink: 0,
+                  width: 20,
+                  display: "flex",
+                  justifyContent: "center",
+                }}
+              >
+                <StageStatusBadge status={stage.status} isDark={isDark} />
               </Box>
             </Box>
           );

@@ -10,6 +10,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import LanguageIcon from "@mui/icons-material/Language";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import { useTheme } from "@mui/material/styles";
 import PipelineStepper, { PipelineStage } from "./PipelineStepper";
 
 export interface Project {
@@ -24,29 +25,28 @@ export interface Project {
   stages: PipelineStage[];
 }
 
-const STATUS_STYLES: Record<
-  string,
-  { bg: string; color: string; borderColor: string; label: string }
-> = {
-  in_progress: {
-    bg: "rgba(37,99,235,0.08)",
-    color: "#2563eb",
-    borderColor: "rgba(37,99,235,0.2)",
-    label: "In Progress",
-  },
-  done: {
-    bg: "rgba(34,197,94,0.08)",
-    color: "#16a34a",
-    borderColor: "rgba(34,197,94,0.2)",
-    label: "Complete",
-  },
-  error: {
-    bg: "rgba(239,68,68,0.08)",
-    color: "#dc2626",
-    borderColor: "rgba(239,68,68,0.2)",
-    label: "Error",
-  },
-};
+function getStatusStyles(isDark: boolean) {
+  return {
+    in_progress: {
+      bg: isDark ? "rgba(6,182,212,0.1)" : "rgba(37,99,235,0.08)",
+      color: isDark ? "#22d3ee" : "#2563eb",
+      borderColor: isDark ? "rgba(6,182,212,0.2)" : "rgba(37,99,235,0.2)",
+      label: "In Progress",
+    },
+    done: {
+      bg: isDark ? "rgba(34,197,94,0.1)" : "rgba(34,197,94,0.08)",
+      color: isDark ? "#4ade80" : "#16a34a",
+      borderColor: isDark ? "rgba(34,197,94,0.2)" : "rgba(34,197,94,0.2)",
+      label: "Complete",
+    },
+    error: {
+      bg: isDark ? "rgba(239,68,68,0.1)" : "rgba(239,68,68,0.08)",
+      color: isDark ? "#f87171" : "#dc2626",
+      borderColor: isDark ? "rgba(239,68,68,0.2)" : "rgba(239,68,68,0.2)",
+      label: "Error",
+    },
+  } as const;
+}
 
 interface ProjectCardProps {
   project: Project;
@@ -55,31 +55,56 @@ interface ProjectCardProps {
 
 export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
 
   const currentStage = project.stages[project.pipelineStage - 1];
   const stageLabel = currentStage?.label ?? "Unknown";
-  const statusStyle = STATUS_STYLES[project.pipelineStatus] || STATUS_STYLES.in_progress;
+  const statusStyles = getStatusStyles(isDark);
+  const statusStyle = statusStyles[project.pipelineStatus] || statusStyles.in_progress;
 
   const doneCount = project.stages.filter((s) => s.status === "done").length;
   const progress = Math.round((doneCount / project.stages.length) * 100);
+
+  const progressBarColor =
+    project.pipelineStatus === "done"
+      ? isDark ? "#4ade80" : "#22c55e"
+      : project.pipelineStatus === "error"
+        ? isDark ? "#f87171" : "#ef4444"
+        : isDark
+          ? "linear-gradient(90deg, #06b6d4 0%, #8b5cf6 100%)"
+          : "linear-gradient(90deg, #2563eb 0%, #7c3aed 100%)";
 
   return (
     <Box
       sx={{
         border: "1px solid",
-        borderColor: expanded ? "primary.main" : "rgba(0,0,0,0.06)",
+        borderColor: expanded
+          ? isDark ? "rgba(6,182,212,0.3)" : "primary.main"
+          : isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
         borderRadius: "0.875rem",
-        bgcolor: "background.paper",
+        bgcolor: isDark ? "rgba(20,20,20,0.6)" : "background.paper",
         overflow: "hidden",
-        transition: "all 0.25s ease",
+        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        backdropFilter: isDark ? "blur(8px)" : "none",
         boxShadow: expanded
-          ? "0 4px 16px -2px rgba(37,99,235,0.1)"
-          : "0 1px 3px rgba(0,0,0,0.04)",
+          ? isDark
+            ? "0 4px 20px -2px rgba(6,182,212,0.12), inset 0 1px 0 rgba(255,255,255,0.02)"
+            : "0 4px 16px -2px rgba(37,99,235,0.1)"
+          : isDark
+            ? "0 1px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.02)"
+            : "0 1px 3px rgba(0,0,0,0.04)",
         "&:hover": {
-          borderColor: expanded ? "primary.main" : "rgba(37,99,235,0.2)",
+          borderColor: expanded
+            ? isDark ? "rgba(6,182,212,0.3)" : "primary.main"
+            : isDark ? "rgba(6,182,212,0.15)" : "rgba(37,99,235,0.2)",
           boxShadow: expanded
-            ? "0 4px 16px -2px rgba(37,99,235,0.1)"
-            : "0 2px 8px -1px rgba(0,0,0,0.06)",
+            ? isDark
+              ? "0 4px 20px -2px rgba(6,182,212,0.12), inset 0 1px 0 rgba(255,255,255,0.02)"
+              : "0 4px 16px -2px rgba(37,99,235,0.1)"
+            : isDark
+              ? "0 2px 8px -1px rgba(6,182,212,0.08), inset 0 1px 0 rgba(255,255,255,0.02)"
+              : "0 2px 8px -1px rgba(0,0,0,0.06)",
         },
       }}
     >
@@ -87,7 +112,7 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
       <Box
         sx={{
           height: 3,
-          bgcolor: "rgba(0,0,0,0.03)",
+          bgcolor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
           overflow: "hidden",
         }}
       >
@@ -95,13 +120,11 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
           sx={{
             height: "100%",
             width: `${progress}%`,
-            background:
-              project.pipelineStatus === "done"
-                ? "#22c55e"
-                : project.pipelineStatus === "error"
-                  ? "#ef4444"
-                  : "linear-gradient(90deg, #2563eb 0%, #7c3aed 100%)",
-            transition: "width 0.5s ease-out",
+            background: progressBarColor,
+            transition: "width 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
+            ...(progress > 0 && progress < 100 && isDark && {
+              boxShadow: "0 0 6px rgba(6,182,212,0.3)",
+            }),
           }}
         />
       </Box>
@@ -175,7 +198,9 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
               sx={{
                 fontSize: "0.75rem",
                 fontWeight: 600,
-                color: progress === 100 ? "#22c55e" : "#2563eb",
+                color: progress === 100
+                  ? isDark ? "#4ade80" : "#22c55e"
+                  : isDark ? "#22d3ee" : "#2563eb",
                 ml: "auto",
               }}
             >
@@ -207,8 +232,9 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
             aria-label={expanded ? "Collapse project details" : "Expand project details"}
             sx={{
               ml: 0.5,
-              transition: "transform 0.25s ease",
+              transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
               transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+              color: "text.secondary",
             }}
           >
             <ExpandMoreIcon sx={{ fontSize: 20 }} />
@@ -224,7 +250,9 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
             pb: 2.5,
             pt: 0.5,
             borderTop: "1px solid",
-            borderColor: "rgba(0,0,0,0.04)",
+            borderColor: isDark
+              ? "rgba(255,255,255,0.04)"
+              : "rgba(0,0,0,0.04)",
           }}
         >
           {project.description && (

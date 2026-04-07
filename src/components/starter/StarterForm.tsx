@@ -119,12 +119,17 @@ export default function StarterForm({
   const inputSx = {
     "& .MuiOutlinedInput-root": {
       borderRadius: "0.625rem",
-      bgcolor: "rgba(255,255,255,0.5)",
+      bgcolor: (theme: { palette: { mode: string } }) =>
+        theme.palette.mode === "dark"
+          ? "rgba(255,255,255,0.03)"
+          : "rgba(255,255,255,0.5)",
       "&:hover .MuiOutlinedInput-notchedOutline": {
-        borderColor: "#2563eb",
+        borderColor: (theme: { palette: { mode: string } }) =>
+          theme.palette.mode === "dark" ? "#06b6d4" : "#2563eb",
       },
       "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-        borderColor: "#2563eb",
+        borderColor: (theme: { palette: { mode: string } }) =>
+          theme.palette.mode === "dark" ? "#06b6d4" : "#2563eb",
         borderWidth: 2,
       },
     },
@@ -134,8 +139,10 @@ export default function StarterForm({
     <Box
       className="min-h-[60vh]"
       sx={{
-        background:
-          "linear-gradient(180deg, #eff6ff 0%, rgba(255,255,255,0) 40%)",
+        background: (theme) =>
+          theme.palette.mode === "dark"
+            ? "radial-gradient(ellipse at 50% 0%, rgba(6,182,212,0.06) 0%, transparent 50%)"
+            : "linear-gradient(180deg, #eff6ff 0%, rgba(255,255,255,0) 40%)",
       }}
     >
       <Box className="max-w-2xl mx-auto" sx={{ px: 3, py: 5 }}>
@@ -161,13 +168,19 @@ export default function StarterForm({
               width: 56,
               height: 56,
               borderRadius: "0.875rem",
-              background: "linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)",
+              background: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "linear-gradient(135deg, #06b6d4 0%, #6366f1 100%)"
+                  : "linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               mx: "auto",
               mb: 2.5,
-              boxShadow: "0 8px 16px -4px rgba(37,99,235,0.3)",
+              boxShadow: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "0 8px 24px -4px rgba(6,182,212,0.35)"
+                  : "0 8px 16px -4px rgba(37,99,235,0.3)",
             }}
           >
             <RocketLaunchIcon sx={{ fontSize: 26, color: "#fff" }} />
@@ -195,8 +208,12 @@ export default function StarterForm({
             sx={{
               mb: 3,
               borderRadius: "0.75rem",
-              bgcolor: "rgba(16,185,129,0.08)",
-              border: "1px solid rgba(16,185,129,0.2)",
+              bgcolor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "rgba(16,185,129,0.1)"
+                  : "rgba(16,185,129,0.08)",
+              border: "1px solid",
+              borderColor: "rgba(16,185,129,0.2)",
             }}
           >
             Project created successfully! Redirecting to dashboard...
@@ -209,8 +226,12 @@ export default function StarterForm({
             sx={{
               mb: 3,
               borderRadius: "0.75rem",
-              bgcolor: "rgba(239,68,68,0.06)",
-              border: "1px solid rgba(239,68,68,0.15)",
+              bgcolor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "rgba(239,68,68,0.1)"
+                  : "rgba(239,68,68,0.06)",
+              border: "1px solid",
+              borderColor: "rgba(239,68,68,0.15)",
             }}
           >
             {errorMessage}
@@ -224,10 +245,20 @@ export default function StarterForm({
             p: { xs: 3, sm: 4 },
             borderRadius: "1rem",
             border: "1px solid",
-            borderColor: "rgba(0,0,0,0.06)",
-            bgcolor: "background.paper",
-            boxShadow:
-              "0 1px 3px rgba(0,0,0,0.04), 0 8px 24px -4px rgba(0,0,0,0.06)",
+            borderColor: (theme) =>
+              theme.palette.mode === "dark"
+                ? "rgba(255,255,255,0.06)"
+                : "rgba(0,0,0,0.06)",
+            bgcolor: (theme) =>
+              theme.palette.mode === "dark"
+                ? "rgba(20,20,20,0.6)"
+                : "background.paper",
+            backdropFilter: (theme) =>
+              theme.palette.mode === "dark" ? "blur(12px)" : "none",
+            boxShadow: (theme) =>
+              theme.palette.mode === "dark"
+                ? "0 1px 3px rgba(0,0,0,0.2), 0 8px 24px -4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.02)"
+                : "0 1px 3px rgba(0,0,0,0.04), 0 8px 24px -4px rgba(0,0,0,0.06)",
           }}
         >
           <Box className="space-y-5">
@@ -237,7 +268,8 @@ export default function StarterForm({
                 variant="body2"
                 sx={{
                   fontWeight: 600,
-                  color: "primary.main",
+                  color: (theme) =>
+                    theme.palette.mode === "dark" ? "#06b6d4" : "primary.main",
                   textTransform: "uppercase",
                   letterSpacing: "0.05em",
                   fontSize: "0.7rem",
@@ -298,7 +330,8 @@ export default function StarterForm({
                 variant="body2"
                 sx={{
                   fontWeight: 600,
-                  color: "primary.main",
+                  color: (theme) =>
+                    theme.palette.mode === "dark" ? "#06b6d4" : "primary.main",
                   textTransform: "uppercase",
                   letterSpacing: "0.05em",
                   fontSize: "0.7rem",
@@ -385,21 +418,32 @@ export default function StarterForm({
                 )
               }
               sx={{
-                background:
-                  "linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)",
+                background: (theme) =>
+                  theme.palette.mode === "dark"
+                    ? "linear-gradient(135deg, #06b6d4 0%, #6366f1 100%)"
+                    : "linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)",
                 fontWeight: 600,
                 py: 1.5,
                 borderRadius: "0.625rem",
                 textTransform: "none",
                 fontSize: "0.95rem",
-                boxShadow: "0 4px 12px -2px rgba(37,99,235,0.35)",
+                boxShadow: (theme) =>
+                  theme.palette.mode === "dark"
+                    ? "0 4px 16px -2px rgba(6,182,212,0.35)"
+                    : "0 4px 12px -2px rgba(37,99,235,0.35)",
                 "&:hover": {
-                  background:
-                    "linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%)",
-                  boxShadow: "0 6px 16px -2px rgba(37,99,235,0.45)",
+                  background: (theme) =>
+                    theme.palette.mode === "dark"
+                      ? "linear-gradient(135deg, #0891b2 0%, #4f46e5 100%)"
+                      : "linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%)",
+                  boxShadow: (theme) =>
+                    theme.palette.mode === "dark"
+                      ? "0 6px 20px -2px rgba(6,182,212,0.45)"
+                      : "0 6px 16px -2px rgba(37,99,235,0.45)",
                 },
                 "&.Mui-disabled": {
-                  background: "#e5e7eb",
+                  background: (theme) =>
+                    theme.palette.mode === "dark" ? "#1f2937" : "#e5e7eb",
                   boxShadow: "none",
                 },
               }}

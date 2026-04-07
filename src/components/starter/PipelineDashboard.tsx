@@ -29,8 +29,10 @@ export default function PipelineDashboard({
     <Box
       sx={{
         minHeight: "60vh",
-        background:
-          "linear-gradient(180deg, #eff6ff 0%, rgba(255,255,255,0) 30%)",
+        background: (theme) =>
+          theme.palette.mode === "dark"
+            ? "radial-gradient(ellipse at 50% 0%, rgba(6,182,212,0.06) 0%, transparent 50%)"
+            : "linear-gradient(180deg, #eff6ff 0%, rgba(255,255,255,0) 30%)",
       }}
     >
       <Box className="max-w-3xl mx-auto" sx={{ px: 3, py: 5 }}>
@@ -64,9 +66,10 @@ export default function PipelineDashboard({
                         width: 8,
                         height: 8,
                         borderRadius: "50%",
-                        bgcolor: "#2563eb",
-                        animation: "pulse 2s ease-in-out infinite",
-                        "@keyframes pulse": {
+                        bgcolor: (theme) =>
+                          theme.palette.mode === "dark" ? "#22d3ee" : "#2563eb",
+                        animation: "dashboard-pulse 2s ease-in-out infinite",
+                        "@keyframes dashboard-pulse": {
                           "0%, 100%": {
                             opacity: 1,
                             transform: "scale(1)",
@@ -80,7 +83,11 @@ export default function PipelineDashboard({
                     />
                     <Typography
                       variant="body2"
-                      sx={{ color: "#2563eb", fontWeight: 500 }}
+                      sx={{
+                        color: (theme) =>
+                          theme.palette.mode === "dark" ? "#22d3ee" : "#2563eb",
+                        fontWeight: 500,
+                      }}
                     >
                       {activeCount} active
                     </Typography>
@@ -93,12 +100,17 @@ export default function PipelineDashboard({
                         width: 8,
                         height: 8,
                         borderRadius: "50%",
-                        bgcolor: "#22c55e",
+                        bgcolor: (theme) =>
+                          theme.palette.mode === "dark" ? "#4ade80" : "#22c55e",
                       }}
                     />
                     <Typography
                       variant="body2"
-                      sx={{ color: "#22c55e", fontWeight: 500 }}
+                      sx={{
+                        color: (theme) =>
+                          theme.palette.mode === "dark" ? "#4ade80" : "#22c55e",
+                        fontWeight: 500,
+                      }}
                     >
                       {doneCount} complete
                     </Typography>
@@ -111,16 +123,26 @@ export default function PipelineDashboard({
               startIcon={<AddIcon />}
               onClick={onNewProject}
               sx={{
-                background:
-                  "linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)",
+                background: (theme) =>
+                  theme.palette.mode === "dark"
+                    ? "linear-gradient(135deg, #06b6d4 0%, #6366f1 100%)"
+                    : "linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)",
                 fontWeight: 600,
                 borderRadius: "0.625rem",
                 textTransform: "none",
-                boxShadow: "0 4px 12px -2px rgba(37,99,235,0.3)",
+                boxShadow: (theme) =>
+                  theme.palette.mode === "dark"
+                    ? "0 4px 16px -2px rgba(6,182,212,0.3)"
+                    : "0 4px 12px -2px rgba(37,99,235,0.3)",
                 "&:hover": {
-                  background:
-                    "linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%)",
-                  boxShadow: "0 6px 16px -2px rgba(37,99,235,0.4)",
+                  background: (theme) =>
+                    theme.palette.mode === "dark"
+                      ? "linear-gradient(135deg, #0891b2 0%, #4f46e5 100%)"
+                      : "linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%)",
+                  boxShadow: (theme) =>
+                    theme.palette.mode === "dark"
+                      ? "0 6px 20px -2px rgba(6,182,212,0.4)"
+                      : "0 6px 16px -2px rgba(37,99,235,0.4)",
                 },
               }}
             >
@@ -137,9 +159,15 @@ export default function PipelineDashboard({
               py: 10,
               px: 4,
               border: "1px dashed",
-              borderColor: "rgba(37,99,235,0.2)",
+              borderColor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "rgba(6,182,212,0.2)"
+                  : "rgba(37,99,235,0.2)",
               borderRadius: "1rem",
-              bgcolor: "rgba(239,246,255,0.5)",
+              bgcolor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "rgba(6,182,212,0.03)"
+                  : "rgba(239,246,255,0.5)",
             }}
           >
             <Box
@@ -147,8 +175,10 @@ export default function PipelineDashboard({
                 width: 64,
                 height: 64,
                 borderRadius: "1rem",
-                background:
-                  "linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(124,58,237,0.08) 100%)",
+                background: (theme) =>
+                  theme.palette.mode === "dark"
+                    ? "linear-gradient(135deg, rgba(6,182,212,0.12) 0%, rgba(99,102,241,0.12) 100%)"
+                    : "linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(124,58,237,0.08) 100%)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -156,7 +186,11 @@ export default function PipelineDashboard({
               }}
             >
               <RocketLaunchIcon
-                sx={{ fontSize: 28, color: "#2563eb" }}
+                sx={{
+                  fontSize: 28,
+                  color: (theme) =>
+                    theme.palette.mode === "dark" ? "#22d3ee" : "#2563eb",
+                }}
               />
             </Box>
             <Typography
@@ -180,11 +214,17 @@ export default function PipelineDashboard({
                 borderRadius: "0.625rem",
                 fontWeight: 600,
                 textTransform: "none",
-                borderColor: "#2563eb",
-                color: "#2563eb",
+                borderColor: (theme) =>
+                  theme.palette.mode === "dark" ? "#06b6d4" : "#2563eb",
+                color: (theme) =>
+                  theme.palette.mode === "dark" ? "#22d3ee" : "#2563eb",
                 "&:hover": {
-                  borderColor: "#1d4ed8",
-                  bgcolor: "rgba(37,99,235,0.04)",
+                  borderColor: (theme) =>
+                    theme.palette.mode === "dark" ? "#22d3ee" : "#1d4ed8",
+                  bgcolor: (theme) =>
+                    theme.palette.mode === "dark"
+                      ? "rgba(6,182,212,0.06)"
+                      : "rgba(37,99,235,0.04)",
                 },
               }}
             >
