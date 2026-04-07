@@ -33,6 +33,37 @@ export interface ScrapeResult {
   failedPages: number;
 }
 
+export interface DesignSpec {
+  layout: {
+    pages: { name: string; path: string; sections: string[] }[];
+    navigation: { items: { label: string; href: string }[] };
+  };
+  colorScheme: {
+    primary: string;
+    secondary: string;
+    accent: string;
+    background: string;
+    surface: string;
+    text: string;
+    textSecondary: string;
+  };
+  typography: {
+    headingFont: string;
+    bodyFont: string;
+    baseSize: string;
+  };
+  contentMapping: Record<string, { heading: string; content: string[]; images: string[] }>;
+  components: {
+    hero: { style: string; hasImage: boolean; hasSubtitle: boolean };
+    sections: { name: string; type: string; description: string }[];
+  };
+}
+
+export interface GeneratedCode {
+  files: { path: string; content: string }[];
+  generatedAt: string;
+}
+
 export interface StoredProject {
   id: string;
   clientName: string;
@@ -45,6 +76,9 @@ export interface StoredProject {
   pipelineError?: string;
   stages: PipelineStage[];
   scrapeResult?: ScrapeResult;
+  design?: DesignSpec;
+  generatedCode?: GeneratedCode;
+  repoUrl?: string;
 }
 
 // In-memory store — replace with a Vercel Marketplace database for production persistence.

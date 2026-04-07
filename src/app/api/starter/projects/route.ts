@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { checkSession } from "@/lib/auth";
-import { listProjects, createProject, advanceStage, updateProject, setStageError } from "@/lib/store";
+import { listProjects, createProject, advanceStage, updateProject, setStageError, getProject } from "@/lib/store";
 import { scrapeWebsite } from "@/lib/scraper";
+import { generateDesign } from "@/lib/design-generator";
+import { generateCode } from "@/lib/code-generator";
+import { pushToGitHub } from "@/lib/github-push";
 
 async function requireAuth() {
   if (!(await checkSession())) {
@@ -44,19 +47,58 @@ export async function POST(request: NextRequest) {
     specialRequirements: specialRequirements?.trim() || null,
   });
 
-  // Auto-start scraping in the background after the response is sent
+  // Auto-run pipeline stages in the background after the response is sent
   after(async () => {
     const id = project.id;
-    // Advance from stage 1 (Starting) to stage 2 (Reading Website)
+
+    // Stage 1 → 2: Scrape website
     advanceStage(id);
     try {
       const scrapeResult = await scrapeWebsite(project.websiteUrl);
       updateProject(id, { scrapeResult });
-      // Advance from stage 2 (Reading Website) to stage 3 (Designing)
-      advanceStage(id);
+      advanceStage(id); // → stage 3 (Designing)
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Scrape failed";
-      setStageError(id, message);
+      setStageError(id, err instanceof Error ? err.message : "Scrape failed");
+      return;
+    }
+
+    // Stage 3 → 4: Design generation (only if ANTHROPIC_API_KEY is set)
+    if (!process.env.ANTHROPIC_API_KEY) return;
+    try {
+      const proj = getProject(id)!;
+      const design = await generateDesign(
+        proj.scrapeResult!,
+        proj.clientName,
+        proj.description,
+        proj.specialRequirements
+      );
+      updateProject(id, { design });
+      advanceStage(id); // → stage 4 (UI/UX)
+    } catch (err) {
+      setStageError(id, err instanceof Error ? err.message : "Design generation failed");
+      return;
+    }
+
+    // Stage 4 → 5: Code generation
+    try {
+      const proj = getProject(id)!;
+      const generatedCode = await generateCode(proj.design!, proj.scrapeResult!, proj.clientName);
+      updateProject(id, { generatedCode });
+      advanceStage(id); // → stage 5 (Creating Repo)
+    } catch (err) {
+      setStageError(id, err instanceof Error ? err.message : "Code generation failed");
+      return;
+    }
+
+    // Stage 5 → 6: GitHub push (only if GITHUB_TOKEN is set)
+    if (!process.env.GITHUB_TOKEN) return;
+    try {
+      const proj = getProject(id)!;
+      const { repoUrl } = await pushToGitHub(proj.clientName, proj.generatedCode!);
+      updateProject(id, { repoUrl });
+      advanceStage(id); // → stage 6 (Generating Code)
+    } catch (err) {
+      setStageError(id, err instanceof Error ? err.message : "GitHub push failed");
     }
   });
 

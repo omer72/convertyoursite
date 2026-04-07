@@ -9,10 +9,11 @@ import IconButton from "@mui/material/IconButton";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import LanguageIcon from "@mui/icons-material/Language";
+import GitHubIcon from "@mui/icons-material/GitHub";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import { useTheme } from "@mui/material/styles";
 import PipelineStepper, { PipelineStage } from "./PipelineStepper";
-import type { ScrapeResult } from "@/lib/store";
+import type { ScrapeResult, DesignSpec, GeneratedCode } from "@/lib/store";
 
 export interface Project {
   id: string;
@@ -26,6 +27,9 @@ export interface Project {
   pipelineError?: string;
   stages: PipelineStage[];
   scrapeResult?: ScrapeResult;
+  design?: DesignSpec;
+  generatedCode?: GeneratedCode;
+  repoUrl?: string;
 }
 
 function getStatusStyles(isDark: boolean) {
@@ -358,6 +362,105 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
                   <strong>Phones:</strong> {project.scrapeResult.contact.phones.join(", ")}
                 </Typography>
               )}
+            </Box>
+          )}
+
+          {project.design && (
+            <Box
+              sx={{
+                mt: 2,
+                p: 2,
+                borderRadius: "0.5rem",
+                bgcolor: isDark ? "rgba(139,92,246,0.05)" : "rgba(124,58,237,0.03)",
+                border: "1px solid",
+                borderColor: isDark ? "rgba(139,92,246,0.1)" : "rgba(124,58,237,0.08)",
+              }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 600, mb: 1, fontSize: "0.825rem" }}>
+                Design Spec
+              </Typography>
+              <Box className="flex items-center gap-2 mb-1.5">
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem", mr: 0.5 }}>
+                  Colors:
+                </Typography>
+                {Object.entries(project.design.colorScheme).slice(0, 7).map(([key, color]) => (
+                  <Box
+                    key={key}
+                    title={`${key}: ${color}`}
+                    sx={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: "4px",
+                      bgcolor: color,
+                      border: "1px solid",
+                      borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
+                    }}
+                  />
+                ))}
+              </Box>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.8rem", mb: 0.5 }}>
+                <strong>Fonts:</strong> {project.design.typography.headingFont} / {project.design.typography.bodyFont}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.8rem", mb: 0.5 }}>
+                <strong>Pages:</strong> {project.design.layout.pages.map((p) => p.name).join(", ")}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.8rem" }}>
+                <strong>Components:</strong> {project.design.components.sections.map((s) => s.name).join(", ")}
+              </Typography>
+            </Box>
+          )}
+
+          {project.generatedCode && (
+            <Box
+              sx={{
+                mt: 2,
+                p: 2,
+                borderRadius: "0.5rem",
+                bgcolor: isDark ? "rgba(34,197,94,0.05)" : "rgba(22,163,74,0.03)",
+                border: "1px solid",
+                borderColor: isDark ? "rgba(34,197,94,0.1)" : "rgba(22,163,74,0.08)",
+              }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, fontSize: "0.825rem" }}>
+                Generated Code
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.8rem" }}>
+                {project.generatedCode.files.length} files generated
+              </Typography>
+            </Box>
+          )}
+
+          {project.repoUrl && (
+            <Box
+              sx={{
+                mt: 2,
+                p: 2,
+                borderRadius: "0.5rem",
+                bgcolor: isDark ? "rgba(6,182,212,0.05)" : "rgba(37,99,235,0.03)",
+                border: "1px solid",
+                borderColor: isDark ? "rgba(6,182,212,0.1)" : "rgba(37,99,235,0.08)",
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+              }}
+            >
+              <GitHubIcon sx={{ fontSize: 18, color: "text.secondary" }} />
+              <Typography
+                component="a"
+                href={project.repoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="body2"
+                sx={{
+                  fontSize: "0.825rem",
+                  fontWeight: 600,
+                  color: isDark ? "#22d3ee" : "#2563eb",
+                  textDecoration: "none",
+                  "&:hover": { textDecoration: "underline" },
+                }}
+              >
+                {project.repoUrl}
+              </Typography>
             </Box>
           )}
         </Box>
