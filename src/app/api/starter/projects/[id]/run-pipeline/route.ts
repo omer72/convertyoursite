@@ -56,8 +56,8 @@ export async function POST(
     }
 
     if (getProject(id)!.pipelineStage <= 3) {
-      if (!process.env.ANTHROPIC_API_KEY) {
-        setStageError(id, "ANTHROPIC_API_KEY is not configured — cannot generate design");
+      if (!process.env.OPENAI_API_KEY) {
+        setStageError(id, "OPENAI_API_KEY is not configured — cannot generate design");
         return;
       }
       try {

@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import type { ScrapeResult, DesignSpec } from "./store";
 
 const DESIGN_SYSTEM_PROMPT = `You are a web design expert. Given scraped website data, generate a design specification for a modern, professional replacement website.
@@ -47,12 +47,12 @@ export async function generateDesign(
   description: string,
   specialRequirements: string | null
 ): Promise<DesignSpec> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error("ANTHROPIC_API_KEY environment variable is not set");
+    throw new Error("OPENAI_API_KEY environment variable is not set");
   }
 
-  const client = new Anthropic({ apiKey });
+  const client = new OpenAI({ apiKey });
 
   const scrapeContext = buildScrapeContext(scrapeResult);
 
@@ -64,19 +64,21 @@ ${specialRequirements ? `Special requirements: ${specialRequirements}` : ""}
 Scraped website data:
 ${scrapeContext}`;
 
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
+  const response = await client.chat.completions.create({
+    model: "gpt-4o",
     max_tokens: 4096,
-    messages: [{ role: "user", content: userPrompt }],
-    system: DESIGN_SYSTEM_PROMPT,
+    messages: [
+      { role: "system", content: DESIGN_SYSTEM_PROMPT },
+      { role: "user", content: userPrompt },
+    ],
   });
 
-  const textBlock = response.content.find((b) => b.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
+  const text = response.choices[0]?.message?.content;
+  if (!text) {
     throw new Error("No text response from design generation");
   }
 
-  const jsonStr = textBlock.text.trim();
+  const jsonStr = text.trim();
   const design: DesignSpec = JSON.parse(jsonStr);
 
   // Basic validation

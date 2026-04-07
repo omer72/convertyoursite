@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import type { QaReport, ScrapeResult, GeneratedCode } from "./store";
 
 const FIX_SYSTEM_PROMPT = `You are an expert Next.js developer fixing a generated website based on QA failures.
@@ -36,12 +36,12 @@ export async function generateFixes(
   generatedCode: GeneratedCode,
   clientName: string
 ): Promise<GeneratedCode> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error("ANTHROPIC_API_KEY environment variable is not set");
+    throw new Error("OPENAI_API_KEY environment variable is not set");
   }
 
-  const client = new Anthropic({ apiKey });
+  const client = new OpenAI({ apiKey });
 
   const failingChecks = qaReport.checks.filter(
     (c) => c.status === "fail" || c.status === "warn"
@@ -70,19 +70,21 @@ ${currentFiles}
 
 Generate the fixed files. Only include files that need changes.`;
 
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
+  const response = await client.chat.completions.create({
+    model: "gpt-4o",
     max_tokens: 16384,
-    messages: [{ role: "user", content: userPrompt }],
-    system: FIX_SYSTEM_PROMPT,
+    messages: [
+      { role: "system", content: FIX_SYSTEM_PROMPT },
+      { role: "user", content: userPrompt },
+    ],
   });
 
-  const textBlock = response.content.find((b) => b.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
+  const text = response.choices[0]?.message?.content;
+  if (!text) {
     throw new Error("No text response from fix generation");
   }
 
-  const jsonStr = textBlock.text.trim();
+  const jsonStr = text.trim();
   const result: { files: { path: string; content: string }[] } =
     JSON.parse(jsonStr);
 

@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import type { ScrapeResult, DesignSpec, GeneratedCode } from "./store";
 
 const CODE_GEN_SYSTEM_PROMPT = `You are an expert Next.js developer. Given a design spec and scraped website content, generate a complete static Next.js site.
@@ -32,12 +32,12 @@ export async function generateCode(
   scrapeResult: ScrapeResult,
   clientName: string
 ): Promise<GeneratedCode> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error("ANTHROPIC_API_KEY environment variable is not set");
+    throw new Error("OPENAI_API_KEY environment variable is not set");
   }
 
-  const client = new Anthropic({ apiKey });
+  const client = new OpenAI({ apiKey });
 
   const contentSummary = buildContentSummary(scrapeResult);
 
@@ -51,19 +51,21 @@ ${contentSummary}
 
 Generate all files needed for a complete, working Next.js site. Use real content from the scrape — do not use placeholders like "Lorem ipsum".`;
 
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
+  const response = await client.chat.completions.create({
+    model: "gpt-4o",
     max_tokens: 16384,
-    messages: [{ role: "user", content: userPrompt }],
-    system: CODE_GEN_SYSTEM_PROMPT,
+    messages: [
+      { role: "system", content: CODE_GEN_SYSTEM_PROMPT },
+      { role: "user", content: userPrompt },
+    ],
   });
 
-  const textBlock = response.content.find((b) => b.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
+  const text = response.choices[0]?.message?.content;
+  if (!text) {
     throw new Error("No text response from code generation");
   }
 
-  const jsonStr = textBlock.text.trim();
+  const jsonStr = text.trim();
   const result: { files: { path: string; content: string }[] } = JSON.parse(jsonStr);
 
   if (!result.files || !Array.isArray(result.files) || result.files.length === 0) {
