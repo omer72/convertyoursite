@@ -56,7 +56,10 @@ export async function POST(
     }
 
     if (getProject(id)!.pipelineStage <= 3) {
-      if (!process.env.ANTHROPIC_API_KEY) return;
+      if (!process.env.ANTHROPIC_API_KEY) {
+        setStageError(id, "ANTHROPIC_API_KEY is not configured — cannot generate design");
+        return;
+      }
       try {
         const current = getProject(id)!;
         const design = await generateDesign(
@@ -86,7 +89,10 @@ export async function POST(
     }
 
     if (getProject(id)!.pipelineStage <= 5) {
-      if (!process.env.GITHUB_TOKEN) return;
+      if (!process.env.GITHUB_TOKEN) {
+        setStageError(id, "GITHUB_TOKEN is not configured — cannot push to GitHub");
+        return;
+      }
       try {
         const current = getProject(id)!;
         const { repoUrl, repoFullName } = await pushToGitHub(current.clientName, current.generatedCode!);

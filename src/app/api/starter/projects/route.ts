@@ -67,8 +67,11 @@ export async function POST(request: NextRequest) {
       return;
     }
 
-    // Stage 3 → 4: Design generation (only if ANTHROPIC_API_KEY is set)
-    if (!process.env.ANTHROPIC_API_KEY) return;
+    // Stage 3 → 4: Design generation
+    if (!process.env.ANTHROPIC_API_KEY) {
+      setStageError(id, "ANTHROPIC_API_KEY is not configured — cannot generate design");
+      return;
+    }
     try {
       const proj = getProject(id)!;
       const design = await generateDesign(
@@ -95,8 +98,11 @@ export async function POST(request: NextRequest) {
       return;
     }
 
-    // Stage 5 → 6: GitHub push (only if GITHUB_TOKEN is set)
-    if (!process.env.GITHUB_TOKEN) return;
+    // Stage 5 → 6: GitHub push
+    if (!process.env.GITHUB_TOKEN) {
+      setStageError(id, "GITHUB_TOKEN is not configured — cannot push to GitHub");
+      return;
+    }
     try {
       const proj = getProject(id)!;
       const { repoUrl, repoFullName } = await pushToGitHub(proj.clientName, proj.generatedCode!);
