@@ -11,6 +11,16 @@ import { generateFixes } from "@/lib/fix-generator";
 
 const MAX_FIX_ITERATIONS = 3;
 
+function extractErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof Error) {
+    // OpenAI SDK errors include status + message
+    const status = (err as { status?: number }).status;
+    return status ? `${err.message} (HTTP ${status})` : err.message;
+  }
+  if (typeof err === "string") return err;
+  return fallback;
+}
+
 async function requireAuth() {
   if (!(await checkSession())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -56,140 +66,145 @@ export async function POST(request: NextRequest) {
   after(async () => {
     const id = project.id;
 
-    // Stage 1 → 2: Scrape website
-    advanceStage(id);
     try {
-      const scrapeResult = await scrapeWebsite(project.websiteUrl);
-      updateProject(id, { scrapeResult });
-      advanceStage(id); // → stage 3 (Designing)
-    } catch (err) {
-      setStageError(id, err instanceof Error ? err.message : "Scrape failed");
-      return;
-    }
-
-    // Stage 3 → 4: Design generation
-    if (!process.env.OPENAI_API_KEY) {
-      setStageError(id, "OPENAI_API_KEY is not configured — cannot generate design");
-      return;
-    }
-    try {
-      const proj = getProject(id)!;
-      const design = await generateDesign(
-        proj.scrapeResult!,
-        proj.clientName,
-        proj.description,
-        proj.specialRequirements
-      );
-      updateProject(id, { design });
-      advanceStage(id); // → stage 4 (UI/UX)
-    } catch (err) {
-      setStageError(id, err instanceof Error ? err.message : "Design generation failed");
-      return;
-    }
-
-    // Stage 4 → 5: Code generation
-    try {
-      const proj = getProject(id)!;
-      const generatedCode = await generateCode(proj.design!, proj.scrapeResult!, proj.clientName);
-      updateProject(id, { generatedCode });
-      advanceStage(id); // → stage 5 (Creating Repo)
-    } catch (err) {
-      setStageError(id, err instanceof Error ? err.message : "Code generation failed");
-      return;
-    }
-
-    // Stage 5 → 6: GitHub push
-    if (!process.env.GITHUB_TOKEN) {
-      setStageError(id, "GITHUB_TOKEN is not configured — cannot push to GitHub");
-      return;
-    }
-    try {
-      const proj = getProject(id)!;
-      const { repoUrl, repoFullName } = await pushToGitHub(proj.clientName, proj.generatedCode!);
-      updateProject(id, { repoUrl, repoFullName });
-      advanceStage(id); // → stage 6 (Generating Code)
-    } catch (err) {
-      setStageError(id, err instanceof Error ? err.message : "GitHub push failed");
-      return;
-    }
-
-    // Stage 6 → 7: Advance to Deploying
-    advanceStage(id); // → stage 7 (Deploying)
-
-    // Stage 7 → 8: Deploy to GitHub Pages
-    try {
-      const proj = getProject(id)!;
-      const { deployedUrl } = await deployToGitHubPages(proj.repoFullName!);
-      updateProject(id, { deployedUrl });
-      advanceStage(id); // → stage 8 (QA Validation)
-    } catch (err) {
-      setStageError(id, err instanceof Error ? err.message : "Deployment failed");
-      return;
-    }
-
-    // Stage 8 → 9/10: QA Comparison + Fix Loop
-    try {
-      const proj = getProject(id)!;
-      let qaReport = await runQaComparison(
-        proj.scrapeResult!,
-        proj.deployedUrl!,
-        proj.websiteUrl
-      );
-      updateProject(id, { qaReport });
-      advanceStage(id); // → stage 9 (Fixes)
-
-      // If no failures, skip Fixes and go to Complete
-      if (qaReport.summary.fail === 0) {
-        advanceStage(id); // → stage 10 (Complete)
+      // Stage 1 → 2: Scrape website
+      advanceStage(id);
+      try {
+        const scrapeResult = await scrapeWebsite(project.websiteUrl);
+        updateProject(id, { scrapeResult });
+        advanceStage(id); // → stage 3 (Designing)
+      } catch (err) {
+        setStageError(id, extractErrorMessage(err, "Scrape failed"));
         return;
       }
 
-      // Fix/re-validate loop (up to MAX_FIX_ITERATIONS)
-      let iterations = 0;
-      while (qaReport.summary.fail > 0 && iterations < MAX_FIX_ITERATIONS) {
-        iterations++;
-        const current = getProject(id)!;
-
-        // Generate AI-powered fixes
-        const fixedCode = await generateFixes(
-          qaReport,
-          current.scrapeResult!,
-          current.generatedCode!,
-          current.clientName
+      // Stage 3 → 4: Design generation
+      if (!process.env.OPENAI_API_KEY) {
+        setStageError(id, "OPENAI_API_KEY is not configured — cannot generate design");
+        return;
+      }
+      try {
+        const proj = getProject(id)!;
+        const design = await generateDesign(
+          proj.scrapeResult!,
+          proj.clientName,
+          proj.description,
+          proj.specialRequirements
         );
-        updateProject(id, { generatedCode: fixedCode, fixIterations: iterations });
+        updateProject(id, { design });
+        advanceStage(id); // → stage 4 (UI/UX)
+      } catch (err) {
+        setStageError(id, extractErrorMessage(err, "Design generation failed"));
+        return;
+      }
 
-        // Push fixes to GitHub
-        const { repoUrl: fixedRepoUrl, repoFullName: fixedRepoFullName } = await pushToGitHub(
-          current.clientName,
-          fixedCode
-        );
-        updateProject(id, { repoUrl: fixedRepoUrl, repoFullName: fixedRepoFullName });
+      // Stage 4 → 5: Code generation
+      try {
+        const proj = getProject(id)!;
+        const generatedCode = await generateCode(proj.design!, proj.scrapeResult!, proj.clientName);
+        updateProject(id, { generatedCode });
+        advanceStage(id); // → stage 5 (Creating Repo)
+      } catch (err) {
+        setStageError(id, extractErrorMessage(err, "Code generation failed"));
+        return;
+      }
 
-        // Re-deploy
-        rewindToStage(id, 7); // back to Deploying
-        const { deployedUrl: fixedDeployedUrl } = await deployToGitHubPages(fixedRepoFullName);
-        updateProject(id, { deployedUrl: fixedDeployedUrl });
+      // Stage 5 → 6: GitHub push
+      if (!process.env.GITHUB_TOKEN) {
+        setStageError(id, "GITHUB_TOKEN is not configured — cannot push to GitHub");
+        return;
+      }
+      try {
+        const proj = getProject(id)!;
+        const { repoUrl, repoFullName } = await pushToGitHub(proj.clientName, proj.generatedCode!);
+        updateProject(id, { repoUrl, repoFullName });
+        advanceStage(id); // → stage 6 (Generating Code)
+      } catch (err) {
+        setStageError(id, extractErrorMessage(err, "GitHub push failed"));
+        return;
+      }
+
+      // Stage 6 → 7: Advance to Deploying
+      advanceStage(id); // → stage 7 (Deploying)
+
+      // Stage 7 → 8: Deploy to GitHub Pages
+      try {
+        const proj = getProject(id)!;
+        const { deployedUrl } = await deployToGitHubPages(proj.repoFullName!);
+        updateProject(id, { deployedUrl });
         advanceStage(id); // → stage 8 (QA Validation)
+      } catch (err) {
+        setStageError(id, extractErrorMessage(err, "Deployment failed"));
+        return;
+      }
 
-        // Re-run QA
-        qaReport = await runQaComparison(
-          current.scrapeResult!,
-          fixedDeployedUrl,
-          current.websiteUrl
+      // Stage 8 → 9/10: QA Comparison + Fix Loop
+      try {
+        const proj = getProject(id)!;
+        let qaReport = await runQaComparison(
+          proj.scrapeResult!,
+          proj.deployedUrl!,
+          proj.websiteUrl
         );
         updateProject(id, { qaReport });
         advanceStage(id); // → stage 9 (Fixes)
 
+        // If no failures, skip Fixes and go to Complete
         if (qaReport.summary.fail === 0) {
           advanceStage(id); // → stage 10 (Complete)
           return;
         }
-      }
 
-      // Max iterations reached — leave at stage 9 (Fixes) with current QA report
+        // Fix/re-validate loop (up to MAX_FIX_ITERATIONS)
+        let iterations = 0;
+        while (qaReport.summary.fail > 0 && iterations < MAX_FIX_ITERATIONS) {
+          iterations++;
+          const current = getProject(id)!;
+
+          // Generate AI-powered fixes
+          const fixedCode = await generateFixes(
+            qaReport,
+            current.scrapeResult!,
+            current.generatedCode!,
+            current.clientName
+          );
+          updateProject(id, { generatedCode: fixedCode, fixIterations: iterations });
+
+          // Push fixes to GitHub
+          const { repoUrl: fixedRepoUrl, repoFullName: fixedRepoFullName } = await pushToGitHub(
+            current.clientName,
+            fixedCode
+          );
+          updateProject(id, { repoUrl: fixedRepoUrl, repoFullName: fixedRepoFullName });
+
+          // Re-deploy
+          rewindToStage(id, 7); // back to Deploying
+          const { deployedUrl: fixedDeployedUrl } = await deployToGitHubPages(fixedRepoFullName);
+          updateProject(id, { deployedUrl: fixedDeployedUrl });
+          advanceStage(id); // → stage 8 (QA Validation)
+
+          // Re-run QA
+          qaReport = await runQaComparison(
+            current.scrapeResult!,
+            fixedDeployedUrl,
+            current.websiteUrl
+          );
+          updateProject(id, { qaReport });
+          advanceStage(id); // → stage 9 (Fixes)
+
+          if (qaReport.summary.fail === 0) {
+            advanceStage(id); // → stage 10 (Complete)
+            return;
+          }
+        }
+
+        // Max iterations reached — leave at stage 9 (Fixes) with current QA report
+      } catch (err) {
+        setStageError(id, extractErrorMessage(err, "QA/Fix cycle failed"));
+      }
     } catch (err) {
-      setStageError(id, err instanceof Error ? err.message : "QA/Fix cycle failed");
+      // Top-level safety net — catch any unexpected errors so they surface in the UI
+      setStageError(id, extractErrorMessage(err, "Pipeline failed unexpectedly"));
     }
   });
 
