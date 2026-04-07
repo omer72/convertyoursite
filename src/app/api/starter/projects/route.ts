@@ -5,6 +5,8 @@ import { scrapeWebsite } from "@/lib/scraper";
 import { generateDesign } from "@/lib/design-generator";
 import { generateCode } from "@/lib/code-generator";
 import { pushToGitHub } from "@/lib/github-push";
+import { deployToGitHubPages } from "@/lib/github-deploy";
+import { runQaComparison } from "@/lib/qa-checker";
 
 async function requireAuth() {
   if (!(await checkSession())) {
@@ -99,6 +101,41 @@ export async function POST(request: NextRequest) {
       advanceStage(id); // → stage 6 (Generating Code)
     } catch (err) {
       setStageError(id, err instanceof Error ? err.message : "GitHub push failed");
+      return;
+    }
+
+    // Stage 6 → 7: Advance to Deploying
+    advanceStage(id); // → stage 7 (Deploying)
+
+    // Stage 7 → 8: Deploy to GitHub Pages
+    try {
+      const proj = getProject(id)!;
+      const repoFullName = proj.repoUrl!.replace("https://github.com/", "");
+      const { deployedUrl } = await deployToGitHubPages(repoFullName);
+      updateProject(id, { deployedUrl });
+      advanceStage(id); // → stage 8 (QA Validation)
+    } catch (err) {
+      setStageError(id, err instanceof Error ? err.message : "Deployment failed");
+      return;
+    }
+
+    // Stage 8 → 9/10: QA Comparison
+    try {
+      const proj = getProject(id)!;
+      const qaReport = await runQaComparison(
+        proj.scrapeResult!,
+        proj.deployedUrl!,
+        proj.websiteUrl
+      );
+      updateProject(id, { qaReport });
+      advanceStage(id); // → stage 9 (Fixes)
+
+      // If no failures, skip Fixes and go to Complete
+      if (qaReport.summary.fail === 0) {
+        advanceStage(id); // → stage 10 (Complete)
+      }
+    } catch (err) {
+      setStageError(id, err instanceof Error ? err.message : "QA check failed");
     }
   });
 

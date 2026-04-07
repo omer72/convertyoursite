@@ -64,6 +64,20 @@ export interface GeneratedCode {
   generatedAt: string;
 }
 
+export interface QaCheck {
+  name: string;
+  status: "pass" | "fail" | "warn";
+  details: string;
+}
+
+export interface QaReport {
+  checks: QaCheck[];
+  summary: { pass: number; fail: number; warn: number };
+  originalUrl: string;
+  deployedUrl: string;
+  completedAt: string;
+}
+
 export interface StoredProject {
   id: string;
   clientName: string;
@@ -79,6 +93,8 @@ export interface StoredProject {
   design?: DesignSpec;
   generatedCode?: GeneratedCode;
   repoUrl?: string;
+  deployedUrl?: string;
+  qaReport?: QaReport;
 }
 
 // In-memory store — replace with a Vercel Marketplace database for production persistence.

@@ -13,7 +13,11 @@ import GitHubIcon from "@mui/icons-material/GitHub";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import { useTheme } from "@mui/material/styles";
 import PipelineStepper, { PipelineStage } from "./PipelineStepper";
-import type { ScrapeResult, DesignSpec, GeneratedCode } from "@/lib/store";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import type { ScrapeResult, DesignSpec, GeneratedCode, QaReport } from "@/lib/store";
 
 export interface Project {
   id: string;
@@ -30,6 +34,8 @@ export interface Project {
   design?: DesignSpec;
   generatedCode?: GeneratedCode;
   repoUrl?: string;
+  deployedUrl?: string;
+  qaReport?: QaReport;
 }
 
 function getStatusStyles(isDark: boolean) {
@@ -461,6 +467,99 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
               >
                 {project.repoUrl}
               </Typography>
+            </Box>
+          )}
+
+          {project.deployedUrl && (
+            <Box
+              sx={{
+                mt: 2,
+                p: 2,
+                borderRadius: "0.5rem",
+                bgcolor: isDark ? "rgba(34,197,94,0.05)" : "rgba(22,163,74,0.03)",
+                border: "1px solid",
+                borderColor: isDark ? "rgba(34,197,94,0.15)" : "rgba(22,163,74,0.1)",
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+              }}
+            >
+              <OpenInNewIcon sx={{ fontSize: 18, color: isDark ? "#4ade80" : "#16a34a" }} />
+              <Typography
+                component="a"
+                href={project.deployedUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="body2"
+                sx={{
+                  fontSize: "0.825rem",
+                  fontWeight: 600,
+                  color: isDark ? "#4ade80" : "#16a34a",
+                  textDecoration: "none",
+                  "&:hover": { textDecoration: "underline" },
+                }}
+              >
+                {project.deployedUrl}
+              </Typography>
+            </Box>
+          )}
+
+          {project.qaReport && (
+            <Box
+              sx={{
+                mt: 2,
+                p: 2,
+                borderRadius: "0.5rem",
+                bgcolor: isDark ? "rgba(139,92,246,0.05)" : "rgba(124,58,237,0.03)",
+                border: "1px solid",
+                borderColor: isDark ? "rgba(139,92,246,0.1)" : "rgba(124,58,237,0.08)",
+              }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 600, mb: 1.5, fontSize: "0.825rem" }}>
+                QA Report
+              </Typography>
+              <Box className="flex items-center gap-3 mb-2">
+                {[
+                  { label: "Pass", value: project.qaReport.summary.pass, color: isDark ? "#4ade80" : "#22c55e", Icon: CheckCircleOutlineIcon },
+                  { label: "Warn", value: project.qaReport.summary.warn, color: isDark ? "#fbbf24" : "#d97706", Icon: WarningAmberIcon },
+                  { label: "Fail", value: project.qaReport.summary.fail, color: isDark ? "#f87171" : "#dc2626", Icon: ErrorOutlineIcon },
+                ].map((s) => (
+                  <Box key={s.label} className="flex items-center gap-1">
+                    <s.Icon sx={{ fontSize: 16, color: s.color }} />
+                    <Typography variant="body2" sx={{ fontSize: "0.8rem", fontWeight: 600, color: s.color }}>
+                      {s.value}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem" }}>
+                      {s.label}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+              <Box className="space-y-1">
+                {project.qaReport.checks.map((check) => (
+                  <Box
+                    key={check.name}
+                    className="flex items-start gap-2"
+                    sx={{
+                      p: 1,
+                      borderRadius: "0.375rem",
+                      bgcolor: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)",
+                    }}
+                  >
+                    {check.status === "pass" && <CheckCircleOutlineIcon sx={{ fontSize: 14, mt: "2px", color: isDark ? "#4ade80" : "#22c55e" }} />}
+                    {check.status === "warn" && <WarningAmberIcon sx={{ fontSize: 14, mt: "2px", color: isDark ? "#fbbf24" : "#d97706" }} />}
+                    {check.status === "fail" && <ErrorOutlineIcon sx={{ fontSize: 14, mt: "2px", color: isDark ? "#f87171" : "#dc2626" }} />}
+                    <Box>
+                      <Typography variant="body2" sx={{ fontSize: "0.775rem", fontWeight: 600, lineHeight: 1.3 }}>
+                        {check.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem", lineHeight: 1.3 }}>
+                        {check.details}
+                      </Typography>
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
             </Box>
           )}
         </Box>
