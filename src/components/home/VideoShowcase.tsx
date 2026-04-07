@@ -1,4 +1,4 @@
-const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+const basePath = "";
 
 export default function VideoShowcase() {
   return (

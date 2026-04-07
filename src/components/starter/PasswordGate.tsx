@@ -27,16 +27,17 @@ export default function PasswordGate({ onAuthenticated }: PasswordGateProps) {
     setLoading(true);
 
     try {
-      // Known limitation: with `output: "export"` (static site), NEXT_PUBLIC_STARTER_PASSWORD
-      // is inlined into the JS bundle at build time. This is unavoidable without a backend
-      // and only provides a lightweight gate against casual access, not real security.
-      const expected = process.env.NEXT_PUBLIC_STARTER_PASSWORD;
-      if (!expected) {
-        throw new Error("Starter password not configured");
+      const res = await fetch("/api/starter-auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Authentication failed");
       }
-      if (password !== expected) {
-        throw new Error("Invalid password");
-      }
+
       onAuthenticated();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");

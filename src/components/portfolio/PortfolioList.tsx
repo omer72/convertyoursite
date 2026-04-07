@@ -7,7 +7,7 @@ import {
 } from "react-compare-slider";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 
-const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+const basePath = "";
 
 interface PortfolioProject {
   id: string;

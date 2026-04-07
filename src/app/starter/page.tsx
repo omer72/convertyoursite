@@ -1,68 +1,82 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
 import Fade from "@mui/material/Fade";
 import PasswordGate from "@/components/starter/PasswordGate";
-import StarterForm, { STORAGE_KEY } from "@/components/starter/StarterForm";
+import StarterForm from "@/components/starter/StarterForm";
 import PipelineDashboard from "@/components/starter/PipelineDashboard";
 import { Project } from "@/components/starter/ProjectCard";
 
-const AUTH_SESSION_KEY = "starter_authenticated";
-
 type AuthState = "checking" | "unauthenticated" | "authenticated";
 type View = "dashboard" | "form";
+
+const POLL_INTERVAL = 8000; // 8 seconds
 
 export default function StarterPage() {
   const [auth, setAuth] = useState<AuthState>("checking");
   const [view, setView] = useState<View>("dashboard");
   const [projects, setProjects] = useState<Project[]>([]);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Check auth via API on mount
   useEffect(() => {
-    if (sessionStorage.getItem(AUTH_SESSION_KEY) === "1") {
-      setAuth("authenticated");
-    } else {
-      setAuth("unauthenticated");
+    fetch("/api/starter-auth")
+      .then((res) => {
+        setAuth(res.ok ? "authenticated" : "unauthenticated");
+      })
+      .catch(() => setAuth("unauthenticated"));
+  }, []);
+
+  // Fetch projects from API
+  const fetchProjects = useCallback(async () => {
+    try {
+      const res = await fetch("/api/starter/projects");
+      if (!res.ok) return;
+      const data: Project[] = await res.json();
+      setProjects(data);
+    } catch {
+      // silently ignore polling failures
     }
   }, []);
 
-  // Load projects from localStorage once authenticated
+  // Load projects once authenticated, then poll
   useEffect(() => {
-    if (auth === "authenticated") {
-      let stored: Project[] = [];
-      try {
-        stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-      } catch {
-        stored = [];
-      }
-      setProjects(stored);
-      // If no projects yet, go straight to form
-      if (stored.length === 0) {
-        setView("form");
-      }
-    }
-  }, [auth]);
+    if (auth !== "authenticated") return;
+
+    fetchProjects().then(() => {
+      // If no projects, show form
+      setProjects((prev) => {
+        if (prev.length === 0) setView("form");
+        return prev;
+      });
+    });
+
+    pollRef.current = setInterval(fetchProjects, POLL_INTERVAL);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [auth, fetchProjects]);
 
   function handleAuthenticated() {
-    sessionStorage.setItem(AUTH_SESSION_KEY, "1");
     setAuth("authenticated");
   }
 
-  const handleDeleteProject = useCallback((projectId: string) => {
-    setProjects((prev) => {
-      const updated = prev.filter((p) => p.id !== projectId);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      return updated;
-    });
+  const handleDeleteProject = useCallback(async (projectId: string) => {
+    try {
+      const res = await fetch(`/api/starter/projects/${projectId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) return;
+      setProjects((prev) => prev.filter((p) => p.id !== projectId));
+    } catch {
+      // ignore
+    }
   }, []);
 
   const handleProjectCreated = useCallback((project: Project) => {
-    setProjects((prev) => {
-      const updated = [...prev, project];
-      return updated;
-    });
-    // Switch to dashboard after a brief delay so user sees success message
+    setProjects((prev) => [project, ...prev]);
     setTimeout(() => setView("dashboard"), 800);
   }, []);
 

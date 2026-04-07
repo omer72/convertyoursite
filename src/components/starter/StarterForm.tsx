@@ -14,7 +14,6 @@ import LanguageIcon from "@mui/icons-material/Language";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import TuneIcon from "@mui/icons-material/Tune";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import { PIPELINE_STAGES, PipelineStage } from "./PipelineStepper";
 import { Project } from "./ProjectCard";
 
 interface FormData {
@@ -25,16 +24,6 @@ interface FormData {
 }
 
 type FormStatus = "idle" | "submitting" | "success" | "error";
-
-export const STORAGE_KEY = "starter_projects";
-
-function buildInitialStages(): PipelineStage[] {
-  return PIPELINE_STAGES.map((s, i) => ({
-    label: s.label,
-    description: s.description,
-    status: i === 0 ? "in_progress" : "pending",
-  }));
-}
 
 interface StarterFormProps {
   onProjectCreated?: (project: Project) => void;
@@ -76,26 +65,23 @@ export default function StarterForm({
         throw new Error("Invalid website URL");
       }
 
-      const project: Project = {
-        id: crypto.randomUUID(),
-        clientName: form.clientName.trim(),
-        websiteUrl: form.websiteUrl.trim(),
-        description: form.description.trim(),
-        specialRequirements: form.specialRequirements.trim() || null,
-        createdAt: new Date().toISOString(),
-        pipelineStage: 1,
-        pipelineStatus: "in_progress",
-        stages: buildInitialStages(),
-      };
+      const res = await fetch("/api/starter/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientName: form.clientName.trim(),
+          websiteUrl: form.websiteUrl.trim(),
+          description: form.description.trim(),
+          specialRequirements: form.specialRequirements.trim() || null,
+        }),
+      });
 
-      let existing: Project[] = [];
-      try {
-        existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-      } catch {
-        existing = [];
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to create project");
       }
-      existing.push(project);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+
+      const project: Project = await res.json();
 
       setStatus("success");
       setForm({
