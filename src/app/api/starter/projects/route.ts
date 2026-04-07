@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { checkSession } from "@/lib/auth";
-import { listProjects, createProject, advanceStage, updateProject, setStageError, getProject } from "@/lib/store";
+import { listProjects, createProject, advanceStage, updateProject, setStageError, getProject, rewindToStage } from "@/lib/store";
 import { scrapeWebsite } from "@/lib/scraper";
 import { generateDesign } from "@/lib/design-generator";
 import { generateCode } from "@/lib/code-generator";
 import { pushToGitHub } from "@/lib/github-push";
 import { deployToGitHubPages } from "@/lib/github-deploy";
 import { runQaComparison } from "@/lib/qa-checker";
+import { generateFixes } from "@/lib/fix-generator";
+
+const MAX_FIX_ITERATIONS = 3;
 
 async function requireAuth() {
   if (!(await checkSession())) {
@@ -96,8 +99,8 @@ export async function POST(request: NextRequest) {
     if (!process.env.GITHUB_TOKEN) return;
     try {
       const proj = getProject(id)!;
-      const { repoUrl } = await pushToGitHub(proj.clientName, proj.generatedCode!);
-      updateProject(id, { repoUrl });
+      const { repoUrl, repoFullName } = await pushToGitHub(proj.clientName, proj.generatedCode!);
+      updateProject(id, { repoUrl, repoFullName });
       advanceStage(id); // → stage 6 (Generating Code)
     } catch (err) {
       setStageError(id, err instanceof Error ? err.message : "GitHub push failed");
@@ -110,8 +113,7 @@ export async function POST(request: NextRequest) {
     // Stage 7 → 8: Deploy to GitHub Pages
     try {
       const proj = getProject(id)!;
-      const repoFullName = proj.repoUrl!.replace("https://github.com/", "");
-      const { deployedUrl } = await deployToGitHubPages(repoFullName);
+      const { deployedUrl } = await deployToGitHubPages(proj.repoFullName!);
       updateProject(id, { deployedUrl });
       advanceStage(id); // → stage 8 (QA Validation)
     } catch (err) {
@@ -119,10 +121,10 @@ export async function POST(request: NextRequest) {
       return;
     }
 
-    // Stage 8 → 9/10: QA Comparison
+    // Stage 8 → 9/10: QA Comparison + Fix Loop
     try {
       const proj = getProject(id)!;
-      const qaReport = await runQaComparison(
+      let qaReport = await runQaComparison(
         proj.scrapeResult!,
         proj.deployedUrl!,
         proj.websiteUrl
@@ -133,9 +135,55 @@ export async function POST(request: NextRequest) {
       // If no failures, skip Fixes and go to Complete
       if (qaReport.summary.fail === 0) {
         advanceStage(id); // → stage 10 (Complete)
+        return;
       }
+
+      // Fix/re-validate loop (up to MAX_FIX_ITERATIONS)
+      let iterations = 0;
+      while (qaReport.summary.fail > 0 && iterations < MAX_FIX_ITERATIONS) {
+        iterations++;
+        const current = getProject(id)!;
+
+        // Generate AI-powered fixes
+        const fixedCode = await generateFixes(
+          qaReport,
+          current.scrapeResult!,
+          current.generatedCode!,
+          current.clientName
+        );
+        updateProject(id, { generatedCode: fixedCode, fixIterations: iterations });
+
+        // Push fixes to GitHub
+        const { repoUrl: fixedRepoUrl, repoFullName: fixedRepoFullName } = await pushToGitHub(
+          current.clientName,
+          fixedCode
+        );
+        updateProject(id, { repoUrl: fixedRepoUrl, repoFullName: fixedRepoFullName });
+
+        // Re-deploy
+        rewindToStage(id, 7); // back to Deploying
+        const { deployedUrl: fixedDeployedUrl } = await deployToGitHubPages(fixedRepoFullName);
+        updateProject(id, { deployedUrl: fixedDeployedUrl });
+        advanceStage(id); // → stage 8 (QA Validation)
+
+        // Re-run QA
+        qaReport = await runQaComparison(
+          current.scrapeResult!,
+          fixedDeployedUrl,
+          current.websiteUrl
+        );
+        updateProject(id, { qaReport });
+        advanceStage(id); // → stage 9 (Fixes)
+
+        if (qaReport.summary.fail === 0) {
+          advanceStage(id); // → stage 10 (Complete)
+          return;
+        }
+      }
+
+      // Max iterations reached — leave at stage 9 (Fixes) with current QA report
     } catch (err) {
-      setStageError(id, err instanceof Error ? err.message : "QA check failed");
+      setStageError(id, err instanceof Error ? err.message : "QA/Fix cycle failed");
     }
   });
 

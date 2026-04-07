@@ -75,6 +75,17 @@ export default function StarterPage() {
     }
   }, []);
 
+  const handleRetryProject = useCallback(async (projectId: string) => {
+    try {
+      await fetch(`/api/starter/projects/${projectId}/run-pipeline`, {
+        method: "POST",
+      });
+      // Polling will pick up the status changes
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const handleProjectCreated = useCallback((project: Project) => {
     setProjects((prev) => [project, ...prev]);
     setTimeout(() => setView("dashboard"), 800);
@@ -129,6 +140,7 @@ export default function StarterPage() {
           projects={projects}
           onNewProject={() => setView("form")}
           onDeleteProject={handleDeleteProject}
+          onRetryProject={handleRetryProject}
         />
       </Box>
     </Fade>

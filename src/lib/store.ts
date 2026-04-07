@@ -93,8 +93,10 @@ export interface StoredProject {
   design?: DesignSpec;
   generatedCode?: GeneratedCode;
   repoUrl?: string;
+  repoFullName?: string;
   deployedUrl?: string;
   qaReport?: QaReport;
+  fixIterations?: number;
 }
 
 // In-memory store — replace with a Vercel Marketplace database for production persistence.
@@ -167,6 +169,28 @@ export function advanceStage(id: string): StoredProject | null {
     project.stages[currentIdx].status = "done";
     project.pipelineStage += 1;
     project.stages[currentIdx + 1].status = "in_progress";
+  }
+
+  projects.set(id, project);
+  return project;
+}
+
+export function rewindToStage(id: string, stage: number): StoredProject | null {
+  const project = projects.get(id);
+  if (!project || stage < 1 || stage > project.stages.length) return null;
+
+  project.pipelineStage = stage;
+  project.pipelineStatus = "in_progress";
+  delete project.pipelineError;
+
+  for (let i = 0; i < project.stages.length; i++) {
+    if (i < stage - 1) {
+      project.stages[i].status = "done";
+    } else if (i === stage - 1) {
+      project.stages[i].status = "in_progress";
+    } else {
+      project.stages[i].status = "pending";
+    }
   }
 
   projects.set(id, project);

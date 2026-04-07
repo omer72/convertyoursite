@@ -17,6 +17,9 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
+import ReplayIcon from "@mui/icons-material/Replay";
+import Button from "@mui/material/Button";
 import type { ScrapeResult, DesignSpec, GeneratedCode, QaReport } from "@/lib/store";
 
 export interface Project {
@@ -36,6 +39,7 @@ export interface Project {
   repoUrl?: string;
   deployedUrl?: string;
   qaReport?: QaReport;
+  fixIterations?: number;
 }
 
 function getStatusStyles(isDark: boolean) {
@@ -64,10 +68,12 @@ function getStatusStyles(isDark: boolean) {
 interface ProjectCardProps {
   project: Project;
   onDelete?: (projectId: string) => void;
+  onRetry?: (projectId: string) => void;
 }
 
-export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
+export default function ProjectCard({ project, onDelete, onRetry }: ProjectCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
 
@@ -290,9 +296,39 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
                 borderColor: isDark ? "rgba(239,68,68,0.2)" : "rgba(239,68,68,0.15)",
               }}
             >
-              <Typography variant="body2" sx={{ color: isDark ? "#f87171" : "#dc2626", fontSize: "0.8rem" }}>
-                Error: {project.pipelineError}
-              </Typography>
+              <Box className="flex items-center justify-between">
+                <Typography variant="body2" sx={{ color: isDark ? "#f87171" : "#dc2626", fontSize: "0.8rem", flex: 1 }}>
+                  Error: {project.pipelineError}
+                </Typography>
+                {onRetry && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<ReplayIcon sx={{ fontSize: 14 }} />}
+                    disabled={retrying}
+                    onClick={() => {
+                      setRetrying(true);
+                      onRetry(project.id);
+                    }}
+                    sx={{
+                      ml: 1.5,
+                      minWidth: "auto",
+                      textTransform: "none",
+                      fontWeight: 600,
+                      fontSize: "0.75rem",
+                      borderRadius: "0.375rem",
+                      borderColor: isDark ? "rgba(239,68,68,0.3)" : "rgba(239,68,68,0.3)",
+                      color: isDark ? "#f87171" : "#dc2626",
+                      "&:hover": {
+                        borderColor: isDark ? "#f87171" : "#dc2626",
+                        bgcolor: isDark ? "rgba(239,68,68,0.1)" : "rgba(239,68,68,0.05)",
+                      },
+                    }}
+                  >
+                    Retry
+                  </Button>
+                )}
+              </Box>
             </Box>
           )}
 
@@ -515,9 +551,16 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
                 borderColor: isDark ? "rgba(139,92,246,0.1)" : "rgba(124,58,237,0.08)",
               }}
             >
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 1.5, fontSize: "0.825rem" }}>
-                QA Report
-              </Typography>
+              <Box className="flex items-center justify-between mb-1.5">
+                <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.825rem" }}>
+                  QA Report
+                </Typography>
+                {(project.fixIterations ?? 0) > 0 && (
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem" }}>
+                    Fix iteration {project.fixIterations}/3
+                  </Typography>
+                )}
+              </Box>
               <Box className="flex items-center gap-3 mb-2">
                 {[
                   { label: "Pass", value: project.qaReport.summary.pass, color: isDark ? "#4ade80" : "#22c55e", Icon: CheckCircleOutlineIcon },
@@ -560,6 +603,96 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
                   </Box>
                 ))}
               </Box>
+            </Box>
+          )}
+
+          {/* Completion celebration */}
+          {project.pipelineStatus === "done" && project.deployedUrl && (
+            <Box
+              sx={{
+                mt: 2,
+                p: 3,
+                borderRadius: "0.75rem",
+                background: isDark
+                  ? "linear-gradient(135deg, rgba(34,197,94,0.12) 0%, rgba(6,182,212,0.12) 100%)"
+                  : "linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(37,99,235,0.08) 100%)",
+                border: "1px solid",
+                borderColor: isDark ? "rgba(34,197,94,0.25)" : "rgba(34,197,94,0.2)",
+                textAlign: "center",
+              }}
+            >
+              <CheckCircleOutlineIcon
+                sx={{
+                  fontSize: 40,
+                  color: isDark ? "#4ade80" : "#22c55e",
+                  mb: 1,
+                }}
+              />
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                  fontSize: "1rem",
+                  mb: 0.5,
+                  color: isDark ? "#4ade80" : "#16a34a",
+                }}
+              >
+                Website Ready
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.8rem", mb: 2 }}>
+                {project.websiteUrl} has been rebuilt and deployed
+                {(project.fixIterations ?? 0) > 0
+                  ? ` (${project.fixIterations} fix ${project.fixIterations === 1 ? "iteration" : "iterations"})`
+                  : ""}
+              </Typography>
+              <Box className="flex flex-col sm:flex-row items-center justify-center gap-2">
+                <Button
+                  variant="contained"
+                  size="small"
+                  href={project.deployedUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  startIcon={<RocketLaunchIcon />}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 600,
+                    borderRadius: "0.5rem",
+                    bgcolor: isDark ? "#22c55e" : "#16a34a",
+                    "&:hover": { bgcolor: isDark ? "#16a34a" : "#15803d" },
+                    px: 3,
+                  }}
+                >
+                  View Site
+                </Button>
+                {project.repoUrl && (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    href={project.repoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    startIcon={<GitHubIcon />}
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: 600,
+                      borderRadius: "0.5rem",
+                      borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)",
+                      color: "text.primary",
+                      "&:hover": {
+                        borderColor: isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)",
+                      },
+                      px: 3,
+                    }}
+                  >
+                    View Code
+                  </Button>
+                )}
+              </Box>
+              {project.qaReport && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1.5, fontSize: "0.7rem" }}>
+                  QA: {project.qaReport.summary.pass} pass, {project.qaReport.summary.warn} warn, {project.qaReport.summary.fail} fail
+                </Typography>
+              )}
             </Box>
           )}
         </Box>

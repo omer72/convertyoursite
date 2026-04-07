@@ -11,12 +11,14 @@ interface PipelineDashboardProps {
   projects: Project[];
   onNewProject: () => void;
   onDeleteProject?: (projectId: string) => void;
+  onRetryProject?: (projectId: string) => void;
 }
 
 export default function PipelineDashboard({
   projects,
   onNewProject,
   onDeleteProject,
+  onRetryProject,
 }: PipelineDashboardProps) {
   const activeCount = projects.filter(
     (p) => p.pipelineStatus === "in_progress"
@@ -234,7 +236,7 @@ export default function PipelineDashboard({
         ) : (
           <Box className="space-y-3">
             {[...projects].reverse().map((project) => (
-              <ProjectCard key={project.id} project={project} onDelete={onDeleteProject} />
+              <ProjectCard key={project.id} project={project} onDelete={onDeleteProject} onRetry={onRetryProject} />
             ))}
           </Box>
         )}
