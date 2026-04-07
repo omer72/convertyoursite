@@ -12,6 +12,7 @@ import LanguageIcon from "@mui/icons-material/Language";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import { useTheme } from "@mui/material/styles";
 import PipelineStepper, { PipelineStage } from "./PipelineStepper";
+import type { ScrapeResult } from "@/lib/store";
 
 export interface Project {
   id: string;
@@ -22,7 +23,9 @@ export interface Project {
   createdAt: string;
   pipelineStage: number;
   pipelineStatus: "in_progress" | "done" | "error";
+  pipelineError?: string;
   stages: PipelineStage[];
+  scrapeResult?: ScrapeResult;
 }
 
 function getStatusStyles(isDark: boolean) {
@@ -265,6 +268,98 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
             </Typography>
           )}
           <PipelineStepper stages={project.stages} />
+
+          {project.pipelineError && (
+            <Box
+              sx={{
+                mt: 2,
+                p: 1.5,
+                borderRadius: "0.5rem",
+                bgcolor: isDark ? "rgba(239,68,68,0.08)" : "rgba(239,68,68,0.05)",
+                border: "1px solid",
+                borderColor: isDark ? "rgba(239,68,68,0.2)" : "rgba(239,68,68,0.15)",
+              }}
+            >
+              <Typography variant="body2" sx={{ color: isDark ? "#f87171" : "#dc2626", fontSize: "0.8rem" }}>
+                Error: {project.pipelineError}
+              </Typography>
+            </Box>
+          )}
+
+          {project.scrapeResult && (
+            <Box
+              sx={{
+                mt: 2,
+                p: 2,
+                borderRadius: "0.5rem",
+                bgcolor: isDark ? "rgba(6,182,212,0.05)" : "rgba(37,99,235,0.03)",
+                border: "1px solid",
+                borderColor: isDark ? "rgba(6,182,212,0.1)" : "rgba(37,99,235,0.08)",
+              }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 600, mb: 1, fontSize: "0.825rem" }}>
+                Scrape Results
+              </Typography>
+              <Box className="grid grid-cols-2 sm:grid-cols-4 gap-2" sx={{ mb: 1.5 }}>
+                {[
+                  { label: "Pages", value: project.scrapeResult.totalPages },
+                  { label: "Failed", value: project.scrapeResult.failedPages },
+                  { label: "Images", value: project.scrapeResult.pages.reduce((sum, p) => sum + p.images.length, 0) },
+                  { label: "Nav Items", value: project.scrapeResult.navigation.length },
+                ].map((stat) => (
+                  <Box key={stat.label} sx={{ textAlign: "center", py: 0.5 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, fontSize: "1rem", color: isDark ? "#22d3ee" : "#2563eb" }}>
+                      {stat.value}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem" }}>
+                      {stat.label}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+              {project.scrapeResult.meta.title && (
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.8rem", mb: 0.5 }}>
+                  <strong>Title:</strong> {project.scrapeResult.meta.title}
+                </Typography>
+              )}
+              {project.scrapeResult.meta.description && (
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.8rem", mb: 0.5 }}>
+                  <strong>Description:</strong> {project.scrapeResult.meta.description}
+                </Typography>
+              )}
+              {project.scrapeResult.branding.colors.length > 0 && (
+                <Box className="flex items-center gap-1 mt-1">
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem", mr: 0.5 }}>
+                    Colors:
+                  </Typography>
+                  {project.scrapeResult.branding.colors.slice(0, 8).map((color) => (
+                    <Box
+                      key={color}
+                      title={color}
+                      sx={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: "3px",
+                        bgcolor: color,
+                        border: "1px solid",
+                        borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
+                      }}
+                    />
+                  ))}
+                </Box>
+              )}
+              {project.scrapeResult.contact.emails.length > 0 && (
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.8rem", mt: 0.5 }}>
+                  <strong>Emails:</strong> {project.scrapeResult.contact.emails.join(", ")}
+                </Typography>
+              )}
+              {project.scrapeResult.contact.phones.length > 0 && (
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.8rem", mt: 0.5 }}>
+                  <strong>Phones:</strong> {project.scrapeResult.contact.phones.join(", ")}
+                </Typography>
+              )}
+            </Box>
+          )}
         </Box>
       </Collapse>
     </Box>

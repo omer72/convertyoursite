@@ -1,5 +1,38 @@
 import { PIPELINE_STAGES, PipelineStage } from "@/components/starter/PipelineStepper";
 
+export interface ScrapePageResult {
+  url: string;
+  title: string;
+  headings: string[];
+  paragraphs: string[];
+  images: string[];
+  links: string[];
+  error?: string;
+}
+
+export interface ScrapeResult {
+  pages: ScrapePageResult[];
+  branding: {
+    colors: string[];
+    fonts: string[];
+  };
+  navigation: string[];
+  contact: {
+    emails: string[];
+    phones: string[];
+    socialLinks: string[];
+  };
+  meta: {
+    title: string;
+    description: string;
+    ogTags: Record<string, string>;
+    favicon: string;
+  };
+  scrapedAt: string;
+  totalPages: number;
+  failedPages: number;
+}
+
 export interface StoredProject {
   id: string;
   clientName: string;
@@ -9,7 +42,9 @@ export interface StoredProject {
   createdAt: string;
   pipelineStage: number;
   pipelineStatus: "in_progress" | "done" | "error";
+  pipelineError?: string;
   stages: PipelineStage[];
+  scrapeResult?: ScrapeResult;
 }
 
 // In-memory store — replace with a Vercel Marketplace database for production persistence.
@@ -49,6 +84,25 @@ export function createProject(data: {
 
 export function deleteProject(id: string): boolean {
   return projects.delete(id);
+}
+
+export function updateProject(id: string, updates: Partial<StoredProject>): StoredProject | null {
+  const project = projects.get(id);
+  if (!project) return null;
+  Object.assign(project, updates);
+  projects.set(id, project);
+  return project;
+}
+
+export function setStageError(id: string, errorMessage: string): StoredProject | null {
+  const project = projects.get(id);
+  if (!project) return null;
+  const currentIdx = project.pipelineStage - 1;
+  project.stages[currentIdx].status = "error";
+  project.pipelineStatus = "error";
+  project.pipelineError = errorMessage;
+  projects.set(id, project);
+  return project;
 }
 
 export function advanceStage(id: string): StoredProject | null {

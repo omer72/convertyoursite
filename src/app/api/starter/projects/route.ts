@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { checkSession } from "@/lib/auth";
-import { listProjects, createProject } from "@/lib/store";
+import { listProjects, createProject, advanceStage, updateProject, setStageError } from "@/lib/store";
+import { scrapeWebsite } from "@/lib/scraper";
 
 async function requireAuth() {
   if (!(await checkSession())) {
@@ -41,6 +42,22 @@ export async function POST(request: NextRequest) {
     websiteUrl: websiteUrl.trim(),
     description: description.trim(),
     specialRequirements: specialRequirements?.trim() || null,
+  });
+
+  // Auto-start scraping in the background after the response is sent
+  after(async () => {
+    const id = project.id;
+    // Advance from stage 1 (Starting) to stage 2 (Reading Website)
+    advanceStage(id);
+    try {
+      const scrapeResult = await scrapeWebsite(project.websiteUrl);
+      updateProject(id, { scrapeResult });
+      // Advance from stage 2 (Reading Website) to stage 3 (Designing)
+      advanceStage(id);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Scrape failed";
+      setStageError(id, message);
+    }
   });
 
   return NextResponse.json(project, { status: 201 });
