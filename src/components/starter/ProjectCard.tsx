@@ -7,6 +7,7 @@ import Chip from "@mui/material/Chip";
 import Collapse from "@mui/material/Collapse";
 import IconButton from "@mui/material/IconButton";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import LanguageIcon from "@mui/icons-material/Language";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import PipelineStepper, { PipelineStage } from "./PipelineStepper";
@@ -49,9 +50,10 @@ const STATUS_STYLES: Record<
 
 interface ProjectCardProps {
   project: Project;
+  onDelete?: (projectId: string) => void;
 }
 
-export default function ProjectCard({ project }: ProjectCardProps) {
+export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
   const [expanded, setExpanded] = useState(false);
 
   const currentStage = project.stages[project.pipelineStage - 1];
@@ -106,6 +108,14 @@ export default function ProjectCard({ project }: ProjectCardProps) {
 
       {/* Header row */}
       <Box
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e: React.KeyboardEvent) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setExpanded((v) => !v);
+          }
+        }}
         className="flex items-center justify-between cursor-pointer"
         sx={{ px: 2.5, py: 2 }}
         onClick={() => setExpanded((v) => !v)}
@@ -173,16 +183,37 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             </Typography>
           </Box>
         </Box>
-        <IconButton
-          size="small"
-          sx={{
-            ml: 1,
-            transition: "transform 0.25s ease",
-            transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
-          }}
-        >
-          <ExpandMoreIcon sx={{ fontSize: 20 }} />
-        </IconButton>
+        <Box className="flex items-center">
+          {onDelete && (
+            <IconButton
+              size="small"
+              aria-label={`Delete project ${project.clientName}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(project.id);
+              }}
+              sx={{
+                ml: 0.5,
+                color: "text.secondary",
+                opacity: 0.5,
+                "&:hover": { opacity: 1, color: "error.main" },
+              }}
+            >
+              <DeleteOutlineIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          )}
+          <IconButton
+            size="small"
+            aria-label={expanded ? "Collapse project details" : "Expand project details"}
+            sx={{
+              ml: 0.5,
+              transition: "transform 0.25s ease",
+              transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+            }}
+          >
+            <ExpandMoreIcon sx={{ fontSize: 20 }} />
+          </IconButton>
+        </Box>
       </Box>
 
       {/* Expanded pipeline detail */}

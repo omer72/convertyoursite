@@ -29,7 +29,12 @@ export default function StarterPage() {
   // Load projects from localStorage once authenticated
   useEffect(() => {
     if (auth === "authenticated") {
-      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      let stored: Project[] = [];
+      try {
+        stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      } catch {
+        stored = [];
+      }
       setProjects(stored);
       // If no projects yet, go straight to form
       if (stored.length === 0) {
@@ -42,6 +47,14 @@ export default function StarterPage() {
     sessionStorage.setItem(AUTH_SESSION_KEY, "1");
     setAuth("authenticated");
   }
+
+  const handleDeleteProject = useCallback((projectId: string) => {
+    setProjects((prev) => {
+      const updated = prev.filter((p) => p.id !== projectId);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
 
   const handleProjectCreated = useCallback((project: Project) => {
     setProjects((prev) => {
@@ -77,6 +90,7 @@ export default function StarterPage() {
     <PipelineDashboard
       projects={projects}
       onNewProject={() => setView("form")}
+      onDeleteProject={handleDeleteProject}
     />
   );
 }

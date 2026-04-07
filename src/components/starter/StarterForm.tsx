@@ -88,7 +88,12 @@ export default function StarterForm({
         stages: buildInitialStages(),
       };
 
-      const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      let existing: Project[] = [];
+      try {
+        existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      } catch {
+        existing = [];
+      }
       existing.push(project);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
 
