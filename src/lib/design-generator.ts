@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import type { ScrapeResult, DesignSpec } from "./store";
+import { stripMarkdownFences } from "./strip-markdown-fences";
 
 const DESIGN_SYSTEM_PROMPT = `You are a web design expert. Given scraped website data, generate a design specification for a modern, professional replacement website.
 
@@ -71,6 +72,7 @@ ${scrapeContext}`;
       { role: "system", content: DESIGN_SYSTEM_PROMPT },
       { role: "user", content: userPrompt },
     ],
+    response_format: { type: "json_object" },
   });
 
   const text = response.choices[0]?.message?.content;
@@ -78,7 +80,7 @@ ${scrapeContext}`;
     throw new Error("No text response from design generation");
   }
 
-  const jsonStr = text.trim();
+  const jsonStr = stripMarkdownFences(text);
   const design: DesignSpec = JSON.parse(jsonStr);
 
   // Basic validation

@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import type { ScrapeResult, DesignSpec, GeneratedCode } from "./store";
+import { stripMarkdownFences } from "./strip-markdown-fences";
 
 const CODE_GEN_SYSTEM_PROMPT = `You are an expert Next.js developer. Given a design spec and scraped website content, generate a complete static Next.js site.
 
@@ -58,6 +59,7 @@ Generate all files needed for a complete, working Next.js site. Use real content
       { role: "system", content: CODE_GEN_SYSTEM_PROMPT },
       { role: "user", content: userPrompt },
     ],
+    response_format: { type: "json_object" },
   });
 
   const text = response.choices[0]?.message?.content;
@@ -65,7 +67,7 @@ Generate all files needed for a complete, working Next.js site. Use real content
     throw new Error("No text response from code generation");
   }
 
-  const jsonStr = text.trim();
+  const jsonStr = stripMarkdownFences(text);
   const result: { files: { path: string; content: string }[] } = JSON.parse(jsonStr);
 
   if (!result.files || !Array.isArray(result.files) || result.files.length === 0) {

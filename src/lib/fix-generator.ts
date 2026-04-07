@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import type { QaReport, ScrapeResult, GeneratedCode } from "./store";
+import { stripMarkdownFences } from "./strip-markdown-fences";
 
 const FIX_SYSTEM_PROMPT = `You are an expert Next.js developer fixing a generated website based on QA failures.
 
@@ -77,6 +78,7 @@ Generate the fixed files. Only include files that need changes.`;
       { role: "system", content: FIX_SYSTEM_PROMPT },
       { role: "user", content: userPrompt },
     ],
+    response_format: { type: "json_object" },
   });
 
   const text = response.choices[0]?.message?.content;
@@ -84,7 +86,7 @@ Generate the fixed files. Only include files that need changes.`;
     throw new Error("No text response from fix generation");
   }
 
-  const jsonStr = text.trim();
+  const jsonStr = stripMarkdownFences(text);
   const result: { files: { path: string; content: string }[] } =
     JSON.parse(jsonStr);
 
