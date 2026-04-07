@@ -7,7 +7,10 @@ import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CircularProgress from "@mui/material/CircularProgress";
+import { PIPELINE_STAGES, PipelineStage } from "./PipelineStepper";
+import { Project } from "./ProjectCard";
 
 interface FormData {
   clientName: string;
@@ -18,9 +21,22 @@ interface FormData {
 
 type FormStatus = "idle" | "submitting" | "success" | "error";
 
-const STORAGE_KEY = "starter_projects";
+export const STORAGE_KEY = "starter_projects";
 
-export default function StarterForm() {
+function buildInitialStages(): PipelineStage[] {
+  return PIPELINE_STAGES.map((s, i) => ({
+    label: s.label,
+    description: s.description,
+    status: i === 0 ? "in_progress" : "pending",
+  }));
+}
+
+interface StarterFormProps {
+  onProjectCreated?: (project: Project) => void;
+  onBack?: () => void;
+}
+
+export default function StarterForm({ onProjectCreated, onBack }: StarterFormProps) {
   const [form, setForm] = useState<FormData>({
     clientName: "",
     websiteUrl: "",
@@ -54,14 +70,17 @@ export default function StarterForm() {
         throw new Error("Invalid website URL");
       }
 
-      // Create project record
-      const project = {
+      // Create project record with pipeline data
+      const project: Project = {
         id: crypto.randomUUID(),
         clientName: form.clientName.trim(),
         websiteUrl: form.websiteUrl.trim(),
         description: form.description.trim(),
         specialRequirements: form.specialRequirements.trim() || null,
         createdAt: new Date().toISOString(),
+        pipelineStage: 1,
+        pipelineStatus: "in_progress",
+        stages: buildInitialStages(),
       };
 
       // Store in localStorage
@@ -76,6 +95,10 @@ export default function StarterForm() {
         description: "",
         specialRequirements: "",
       });
+
+      if (onProjectCreated) {
+        onProjectCreated(project);
+      }
     } catch (err) {
       setStatus("error");
       setErrorMessage(
@@ -86,6 +109,15 @@ export default function StarterForm() {
 
   return (
     <Box className="max-w-2xl mx-auto" sx={{ px: 3, py: 6 }}>
+      {onBack && (
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={onBack}
+          sx={{ mb: 2, color: "text.secondary" }}
+        >
+          Back to Dashboard
+        </Button>
+      )}
       <Box className="mb-8 text-center">
         <Typography variant="h2" component="h1" gutterBottom>
           New Project Starter
