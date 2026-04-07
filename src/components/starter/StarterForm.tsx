@@ -77,8 +77,12 @@ export default function StarterForm({
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to create project");
+        let message = "Failed to create project";
+        try {
+          const data = await res.json();
+          if (data?.error) message = data.error;
+        } catch {}
+        throw new Error(message);
       }
 
       const project: Project = await res.json();

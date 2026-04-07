@@ -34,8 +34,12 @@ export default function PasswordGate({ onAuthenticated }: PasswordGateProps) {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Authentication failed");
+        let message = "Authentication failed";
+        try {
+          const data = await res.json();
+          if (data?.error) message = data.error;
+        } catch {}
+        throw new Error(message);
       }
 
       onAuthenticated();

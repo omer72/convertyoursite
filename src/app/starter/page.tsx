@@ -34,7 +34,12 @@ export default function StarterPage() {
     try {
       const res = await fetch("/api/starter/projects");
       if (!res.ok) return;
-      const data: Project[] = await res.json();
+      let data: Project[];
+      try {
+        data = await res.json();
+      } catch {
+        return;
+      }
       setProjects(data);
     } catch {
       // silently ignore polling failures
