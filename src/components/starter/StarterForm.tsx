@@ -18,6 +18,8 @@ interface FormData {
 
 type FormStatus = "idle" | "submitting" | "success" | "error";
 
+const STORAGE_KEY = "starter_projects";
+
 export default function StarterForm() {
   const [form, setForm] = useState<FormData>({
     clientName: "",
@@ -40,16 +42,32 @@ export default function StarterForm() {
     setErrorMessage("");
 
     try {
-      const res = await fetch("/convertyoursite/api/starter", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
+      // Validate required fields
+      if (!form.clientName.trim()) throw new Error("Client name is required");
+      if (!form.websiteUrl.trim()) throw new Error("Website URL is required");
+      if (!form.description.trim()) throw new Error("Description is required");
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Something went wrong");
+      // Validate URL format
+      try {
+        new URL(form.websiteUrl);
+      } catch {
+        throw new Error("Invalid website URL");
       }
+
+      // Create project record
+      const project = {
+        id: crypto.randomUUID(),
+        clientName: form.clientName.trim(),
+        websiteUrl: form.websiteUrl.trim(),
+        description: form.description.trim(),
+        specialRequirements: form.specialRequirements.trim() || null,
+        createdAt: new Date().toISOString(),
+      };
+
+      // Store in localStorage
+      const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      existing.push(project);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
 
       setStatus("success");
       setForm({

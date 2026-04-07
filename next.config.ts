@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: process.env.NEXT_EXPORT === "true" ? "export" : undefined,
+  output: "export",
   basePath: "/convertyoursite",
   images: {
     unoptimized: true,

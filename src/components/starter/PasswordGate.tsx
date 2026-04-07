@@ -23,17 +23,13 @@ export default function PasswordGate({ onAuthenticated }: PasswordGateProps) {
     setLoading(true);
 
     try {
-      const res = await fetch("/convertyoursite/api/starter-auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Invalid password");
+      const expected = process.env.NEXT_PUBLIC_STARTER_PASSWORD;
+      if (!expected) {
+        throw new Error("Starter password not configured");
       }
-
+      if (password !== expected) {
+        throw new Error("Invalid password");
+      }
       onAuthenticated();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
