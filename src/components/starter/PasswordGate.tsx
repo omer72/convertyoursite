@@ -6,7 +6,11 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
-import LockIcon from "@mui/icons-material/Lock";
+import InputAdornment from "@mui/material/InputAdornment";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import KeyIcon from "@mui/icons-material/Key";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import CircularProgress from "@mui/material/CircularProgress";
 
 interface PasswordGateProps {
   onAuthenticated: () => void;
@@ -40,45 +44,112 @@ export default function PasswordGate({ onAuthenticated }: PasswordGateProps) {
 
   return (
     <Box
-      className="min-h-[60vh] flex items-center justify-center"
-      sx={{ px: 3 }}
+      className="min-h-[80vh] flex items-center justify-center"
+      sx={{
+        px: 3,
+        background:
+          "linear-gradient(135deg, #eff6ff 0%, #f5f3ff 50%, #fdf2f8 100%)",
+        position: "relative",
+        overflow: "hidden",
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          top: "-50%",
+          right: "-20%",
+          width: "600px",
+          height: "600px",
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle, rgba(37,99,235,0.06) 0%, transparent 70%)",
+          pointerEvents: "none",
+        },
+        "&::after": {
+          content: '""',
+          position: "absolute",
+          bottom: "-30%",
+          left: "-10%",
+          width: "400px",
+          height: "400px",
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle, rgba(124,58,237,0.05) 0%, transparent 70%)",
+          pointerEvents: "none",
+        },
+      }}
     >
       <Box
         component="form"
         onSubmit={handleSubmit}
         sx={{
-          maxWidth: 400,
+          maxWidth: 420,
           width: "100%",
-          p: 4,
-          borderRadius: "0.75rem",
+          p: { xs: 3.5, sm: 5 },
+          borderRadius: "1rem",
           border: "1px solid",
-          borderColor: "divider",
-          bgcolor: "background.paper",
+          borderColor: "rgba(0,0,0,0.06)",
+          bgcolor: "rgba(255,255,255,0.85)",
+          backdropFilter: "blur(20px)",
+          boxShadow:
+            "0 4px 6px -1px rgba(0,0,0,0.05), 0 20px 40px -8px rgba(37,99,235,0.08)",
+          position: "relative",
+          zIndex: 1,
+          transition: "box-shadow 0.3s ease",
+          "&:hover": {
+            boxShadow:
+              "0 4px 6px -1px rgba(0,0,0,0.05), 0 25px 50px -8px rgba(37,99,235,0.12)",
+          },
         }}
       >
+        {/* Icon badge */}
         <Box className="flex flex-col items-center mb-6">
-          <LockIcon sx={{ fontSize: 48, color: "primary.main", mb: 2 }} />
-          <Typography variant="h4" component="h1" textAlign="center">
+          <Box
+            sx={{
+              width: 64,
+              height: 64,
+              borderRadius: "1rem",
+              background: "linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              mb: 2.5,
+              boxShadow: "0 8px 16px -4px rgba(37,99,235,0.3)",
+            }}
+          >
+            <LockOutlinedIcon sx={{ fontSize: 28, color: "#fff" }} />
+          </Box>
+          <Typography
+            variant="h4"
+            component="h1"
+            textAlign="center"
+            sx={{ fontWeight: 700, letterSpacing: "-0.01em" }}
+          >
             Starter Access
           </Typography>
           <Typography
             variant="body2"
             color="text.secondary"
             textAlign="center"
-            sx={{ mt: 1 }}
+            sx={{ mt: 1, maxWidth: 280 }}
           >
-            Enter the password to access the project starter.
+            Enter the access code to manage your website conversion projects.
           </Typography>
         </Box>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 2, borderRadius: "0.75rem" }}>
+          <Alert
+            severity="error"
+            sx={{
+              mb: 2.5,
+              borderRadius: "0.75rem",
+              "& .MuiAlert-icon": { alignItems: "center" },
+            }}
+          >
             {error}
           </Alert>
         )}
 
         <TextField
-          label="Password"
+          label="Access Code"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -86,7 +157,29 @@ export default function PasswordGate({ onAuthenticated }: PasswordGateProps) {
           fullWidth
           variant="outlined"
           autoFocus
-          sx={{ mb: 3 }}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <KeyIcon sx={{ fontSize: 20, color: "text.secondary" }} />
+                </InputAdornment>
+              ),
+            },
+          }}
+          sx={{
+            mb: 3,
+            "& .MuiOutlinedInput-root": {
+              borderRadius: "0.625rem",
+              bgcolor: "rgba(255,255,255,0.6)",
+              "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: "#2563eb",
+              },
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                borderColor: "#2563eb",
+                borderWidth: 2,
+              },
+            },
+          }}
         />
 
         <Button
@@ -94,15 +187,33 @@ export default function PasswordGate({ onAuthenticated }: PasswordGateProps) {
           variant="contained"
           size="large"
           fullWidth
-          disabled={loading}
+          disabled={loading || !password}
+          endIcon={
+            loading ? (
+              <CircularProgress size={18} color="inherit" />
+            ) : (
+              <ArrowForwardIcon sx={{ fontSize: 18 }} />
+            )
+          }
           sx={{
-            bgcolor: "#2563eb",
+            background: "linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)",
             fontWeight: 600,
             py: 1.5,
-            "&:hover": { bgcolor: "#1d4ed8" },
+            borderRadius: "0.625rem",
+            textTransform: "none",
+            fontSize: "0.95rem",
+            boxShadow: "0 4px 12px -2px rgba(37,99,235,0.35)",
+            "&:hover": {
+              background: "linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%)",
+              boxShadow: "0 6px 16px -2px rgba(37,99,235,0.45)",
+            },
+            "&.Mui-disabled": {
+              background: "#e5e7eb",
+              boxShadow: "none",
+            },
           }}
         >
-          {loading ? "Verifying..." : "Enter"}
+          {loading ? "Verifying..." : "Continue"}
         </Button>
       </Box>
     </Box>

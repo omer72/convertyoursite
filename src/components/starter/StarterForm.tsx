@@ -9,6 +9,11 @@ import Alert from "@mui/material/Alert";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CircularProgress from "@mui/material/CircularProgress";
+import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import LanguageIcon from "@mui/icons-material/Language";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import TuneIcon from "@mui/icons-material/Tune";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import { PIPELINE_STAGES, PipelineStage } from "./PipelineStepper";
 import { Project } from "./ProjectCard";
 
@@ -36,7 +41,10 @@ interface StarterFormProps {
   onBack?: () => void;
 }
 
-export default function StarterForm({ onProjectCreated, onBack }: StarterFormProps) {
+export default function StarterForm({
+  onProjectCreated,
+  onBack,
+}: StarterFormProps) {
   const [form, setForm] = useState<FormData>({
     clientName: "",
     websiteUrl: "",
@@ -58,19 +66,16 @@ export default function StarterForm({ onProjectCreated, onBack }: StarterFormPro
     setErrorMessage("");
 
     try {
-      // Validate required fields
       if (!form.clientName.trim()) throw new Error("Client name is required");
       if (!form.websiteUrl.trim()) throw new Error("Website URL is required");
       if (!form.description.trim()) throw new Error("Description is required");
 
-      // Validate URL format
       try {
         new URL(form.websiteUrl);
       } catch {
         throw new Error("Invalid website URL");
       }
 
-      // Create project record with pipeline data
       const project: Project = {
         id: crypto.randomUUID(),
         clientName: form.clientName.trim(),
@@ -83,7 +88,6 @@ export default function StarterForm({ onProjectCreated, onBack }: StarterFormPro
         stages: buildInitialStages(),
       };
 
-      // Store in localStorage
       const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
       existing.push(project);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
@@ -107,121 +111,299 @@ export default function StarterForm({ onProjectCreated, onBack }: StarterFormPro
     }
   }
 
+  const inputSx = {
+    "& .MuiOutlinedInput-root": {
+      borderRadius: "0.625rem",
+      bgcolor: "rgba(255,255,255,0.5)",
+      "&:hover .MuiOutlinedInput-notchedOutline": {
+        borderColor: "#2563eb",
+      },
+      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+        borderColor: "#2563eb",
+        borderWidth: 2,
+      },
+    },
+  };
+
   return (
-    <Box className="max-w-2xl mx-auto" sx={{ px: 3, py: 6 }}>
-      {onBack && (
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={onBack}
-          sx={{ mb: 2, color: "text.secondary" }}
-        >
-          Back to Dashboard
-        </Button>
-      )}
-      <Box className="mb-8 text-center">
-        <Typography variant="h2" component="h1" gutterBottom>
-          New Project Starter
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Enter the client details below to create a new project.
-        </Typography>
-      </Box>
-
-      {status === "success" && (
-        <Alert severity="success" sx={{ mb: 3, borderRadius: "0.75rem" }}>
-          Project created successfully! You can submit another one or close this
-          page.
-        </Alert>
-      )}
-
-      {status === "error" && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: "0.75rem" }}>
-          {errorMessage}
-        </Alert>
-      )}
-
-      <Box
-        component="form"
-        onSubmit={handleSubmit}
-        sx={{
-          p: 4,
-          borderRadius: "0.75rem",
-          border: "1px solid",
-          borderColor: "divider",
-          bgcolor: "background.paper",
-        }}
-      >
-        <Box className="space-y-5">
-          <TextField
-            label="Client Name"
-            name="clientName"
-            value={form.clientName}
-            onChange={handleChange}
-            required
-            fullWidth
-            variant="outlined"
-            placeholder="Acme Corp"
-          />
-
-          <TextField
-            label="Website URL"
-            name="websiteUrl"
-            type="url"
-            value={form.websiteUrl}
-            onChange={handleChange}
-            required
-            fullWidth
-            variant="outlined"
-            placeholder="https://example.com"
-          />
-
-          <TextField
-            label="Description"
-            name="description"
-            value={form.description}
-            onChange={handleChange}
-            required
-            fullWidth
-            multiline
-            rows={4}
-            variant="outlined"
-            placeholder="Describe the project goals, target audience, and key features..."
-          />
-
-          <TextField
-            label="Special Requirements"
-            name="specialRequirements"
-            value={form.specialRequirements}
-            onChange={handleChange}
-            fullWidth
-            multiline
-            rows={3}
-            variant="outlined"
-            placeholder="Any specific technologies, integrations, or constraints... (optional)"
-          />
-
+    <Box
+      className="min-h-[60vh]"
+      sx={{
+        background:
+          "linear-gradient(180deg, #eff6ff 0%, rgba(255,255,255,0) 40%)",
+      }}
+    >
+      <Box className="max-w-2xl mx-auto" sx={{ px: 3, py: 5 }}>
+        {onBack && (
           <Button
-            type="submit"
-            variant="contained"
-            size="large"
-            fullWidth
-            disabled={status === "submitting"}
-            endIcon={
-              status === "submitting" ? (
-                <CircularProgress size={20} color="inherit" />
-              ) : (
-                <RocketLaunchIcon />
-              )
-            }
+            startIcon={<ArrowBackIcon />}
+            onClick={onBack}
             sx={{
-              bgcolor: "#2563eb",
-              fontWeight: 600,
-              py: 1.5,
-              "&:hover": { bgcolor: "#1d4ed8" },
+              mb: 2,
+              color: "text.secondary",
+              fontWeight: 500,
+              "&:hover": { color: "primary.main", bgcolor: "transparent" },
             }}
           >
-            {status === "submitting" ? "Creating Project..." : "Create Project"}
+            Back to Dashboard
           </Button>
+        )}
+
+        {/* Header */}
+        <Box className="mb-8 text-center">
+          <Box
+            sx={{
+              width: 56,
+              height: 56,
+              borderRadius: "0.875rem",
+              background: "linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              mx: "auto",
+              mb: 2.5,
+              boxShadow: "0 8px 16px -4px rgba(37,99,235,0.3)",
+            }}
+          >
+            <RocketLaunchIcon sx={{ fontSize: 26, color: "#fff" }} />
+          </Box>
+          <Typography
+            variant="h3"
+            component="h1"
+            sx={{ fontWeight: 700, letterSpacing: "-0.01em" }}
+          >
+            New Project
+          </Typography>
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{ mt: 1, maxWidth: 400, mx: "auto" }}
+          >
+            Enter the client details to kick off the website conversion pipeline.
+          </Typography>
+        </Box>
+
+        {status === "success" && (
+          <Alert
+            severity="success"
+            icon={<CheckCircleOutlineIcon />}
+            sx={{
+              mb: 3,
+              borderRadius: "0.75rem",
+              bgcolor: "rgba(16,185,129,0.08)",
+              border: "1px solid rgba(16,185,129,0.2)",
+            }}
+          >
+            Project created successfully! Redirecting to dashboard...
+          </Alert>
+        )}
+
+        {status === "error" && (
+          <Alert
+            severity="error"
+            sx={{
+              mb: 3,
+              borderRadius: "0.75rem",
+              bgcolor: "rgba(239,68,68,0.06)",
+              border: "1px solid rgba(239,68,68,0.15)",
+            }}
+          >
+            {errorMessage}
+          </Alert>
+        )}
+
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
+          sx={{
+            p: { xs: 3, sm: 4 },
+            borderRadius: "1rem",
+            border: "1px solid",
+            borderColor: "rgba(0,0,0,0.06)",
+            bgcolor: "background.paper",
+            boxShadow:
+              "0 1px 3px rgba(0,0,0,0.04), 0 8px 24px -4px rgba(0,0,0,0.06)",
+          }}
+        >
+          <Box className="space-y-5">
+            {/* Client Info Section */}
+            <Box>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 600,
+                  color: "primary.main",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  fontSize: "0.7rem",
+                  mb: 2,
+                }}
+              >
+                Client Information
+              </Typography>
+              <Box className="space-y-4">
+                <TextField
+                  label="Client Name"
+                  name="clientName"
+                  value={form.clientName}
+                  onChange={handleChange}
+                  required
+                  fullWidth
+                  variant="outlined"
+                  placeholder="Acme Corp"
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <Box sx={{ mr: 1, display: "flex", color: "text.secondary" }}>
+                          <PersonOutlineIcon sx={{ fontSize: 20 }} />
+                        </Box>
+                      ),
+                    },
+                  }}
+                  sx={inputSx}
+                />
+
+                <TextField
+                  label="Website URL"
+                  name="websiteUrl"
+                  type="url"
+                  value={form.websiteUrl}
+                  onChange={handleChange}
+                  required
+                  fullWidth
+                  variant="outlined"
+                  placeholder="https://example.com"
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <Box sx={{ mr: 1, display: "flex", color: "text.secondary" }}>
+                          <LanguageIcon sx={{ fontSize: 20 }} />
+                        </Box>
+                      ),
+                    },
+                  }}
+                  sx={inputSx}
+                />
+              </Box>
+            </Box>
+
+            {/* Project Details Section */}
+            <Box>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 600,
+                  color: "primary.main",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  fontSize: "0.7rem",
+                  mb: 2,
+                }}
+              >
+                Project Details
+              </Typography>
+              <Box className="space-y-4">
+                <TextField
+                  label="Description"
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                  required
+                  fullWidth
+                  multiline
+                  rows={4}
+                  variant="outlined"
+                  placeholder="Describe the project goals, target audience, and key features..."
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <Box
+                          sx={{
+                            mr: 1,
+                            display: "flex",
+                            color: "text.secondary",
+                            alignSelf: "flex-start",
+                            mt: 1.5,
+                          }}
+                        >
+                          <DescriptionOutlinedIcon sx={{ fontSize: 20 }} />
+                        </Box>
+                      ),
+                    },
+                  }}
+                  sx={inputSx}
+                />
+
+                <TextField
+                  label="Special Requirements"
+                  name="specialRequirements"
+                  value={form.specialRequirements}
+                  onChange={handleChange}
+                  fullWidth
+                  multiline
+                  rows={3}
+                  variant="outlined"
+                  placeholder="Any specific technologies, integrations, or constraints... (optional)"
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <Box
+                          sx={{
+                            mr: 1,
+                            display: "flex",
+                            color: "text.secondary",
+                            alignSelf: "flex-start",
+                            mt: 1.5,
+                          }}
+                        >
+                          <TuneIcon sx={{ fontSize: 20 }} />
+                        </Box>
+                      ),
+                    },
+                  }}
+                  sx={inputSx}
+                />
+              </Box>
+            </Box>
+
+            <Button
+              type="submit"
+              variant="contained"
+              size="large"
+              fullWidth
+              disabled={status === "submitting"}
+              endIcon={
+                status === "submitting" ? (
+                  <CircularProgress size={18} color="inherit" />
+                ) : (
+                  <RocketLaunchIcon sx={{ fontSize: 18 }} />
+                )
+              }
+              sx={{
+                background:
+                  "linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)",
+                fontWeight: 600,
+                py: 1.5,
+                borderRadius: "0.625rem",
+                textTransform: "none",
+                fontSize: "0.95rem",
+                boxShadow: "0 4px 12px -2px rgba(37,99,235,0.35)",
+                "&:hover": {
+                  background:
+                    "linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%)",
+                  boxShadow: "0 6px 16px -2px rgba(37,99,235,0.45)",
+                },
+                "&.Mui-disabled": {
+                  background: "#e5e7eb",
+                  boxShadow: "none",
+                },
+              }}
+            >
+              {status === "submitting"
+                ? "Creating Project..."
+                : "Launch Project"}
+            </Button>
+          </Box>
         </Box>
       </Box>
     </Box>
