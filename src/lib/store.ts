@@ -1,4 +1,4 @@
-import { PIPELINE_STAGES, PipelineStage } from "@/components/starter/PipelineStepper";
+import { PIPELINE_STAGES, PipelineStage } from "@/lib/pipeline-stages";
 
 export interface ScrapePageResult {
   url: string;

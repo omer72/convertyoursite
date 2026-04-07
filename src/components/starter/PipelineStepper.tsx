@@ -17,26 +17,8 @@ import VerifiedIcon from "@mui/icons-material/Verified";
 import BuildIcon from "@mui/icons-material/Build";
 import CelebrationIcon from "@mui/icons-material/Celebration";
 
-export type StageStatus = "pending" | "in_progress" | "done" | "error";
-
-export interface PipelineStage {
-  label: string;
-  description: string;
-  status: StageStatus;
-}
-
-export const PIPELINE_STAGES: { label: string; description: string }[] = [
-  { label: "Starting", description: "Form submitted" },
-  { label: "Reading Website", description: "Scraping/analyzing the old site" },
-  { label: "Designing", description: "Generating design concept" },
-  { label: "UI/UX", description: "Applying design system" },
-  { label: "Creating Repo", description: "New GitHub repo created" },
-  { label: "Generating Code", description: "Building new site code" },
-  { label: "Deploying", description: "Deploying to GitHub Pages" },
-  { label: "QA Validation", description: "Comparing new vs old" },
-  { label: "Fixes", description: "Addressing issues" },
-  { label: "Complete", description: "New site link ready" },
-];
+import { PIPELINE_STAGES, type PipelineStage, type StageStatus } from "@/lib/pipeline-stages";
+export { PIPELINE_STAGES, type PipelineStage, type StageStatus };
 
 const STAGE_ICONS = [
   PlayArrowRoundedIcon,
