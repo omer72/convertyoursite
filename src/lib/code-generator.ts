@@ -16,7 +16,7 @@ Requirements:
 - Use Next.js 14 App Router (app/ directory) — pin "next": "14.2.29" in package.json
 - Use Tailwind CSS v3 for styling (include tailwind.config.js with content paths)
 - The package.json MUST include these devDependencies: typescript, @types/react, @types/node, @types/react-dom
-- Include: package.json, tsconfig.json, next.config.mjs, postcss.config.mjs, src/app/globals.css, src/app/layout.tsx, src/app/page.tsx, and additional page files
+- Include: package.json, tsconfig.json, next.config.mjs, postcss.config.js, tailwind.config.js, src/app/globals.css, src/app/layout.tsx, src/app/page.tsx, and additional page files
 - Use the design spec colors, fonts, and layout exactly
 - Populate pages with REAL content from the scrape data — headings, paragraphs, images
 - Include responsive navigation with mobile hamburger menu
@@ -32,8 +32,17 @@ Requirements:
   const nextConfig = { output: "export", images: { unoptimized: true } };
   export default nextConfig;
   \`\`\`
+- The postcss.config.js MUST use this exact format (CommonJS, NOT .mjs):
+  \`\`\`
+  module.exports = { plugins: { tailwindcss: {}, autoprefixer: {} } };
+  \`\`\`
+- The tailwind.config.js MUST use this exact format:
+  \`\`\`
+  /** @type {import('tailwindcss').Config} */
+  module.exports = { content: ["./src/**/*.{js,ts,jsx,tsx}"], theme: { extend: {} }, plugins: [] };
+  \`\`\`
 - Do NOT use \`next/image\` — use plain \`<img>\` tags instead (next/image requires a server and is incompatible with static export)
-- Use TypeScript for all .tsx/.ts files but next.config.mjs must be plain JavaScript`;
+- Use TypeScript for all .tsx/.ts files but config files (next.config.mjs, postcss.config.js, tailwind.config.js) must be plain JavaScript`;
 
 export async function generateCode(
   design: DesignSpec,
