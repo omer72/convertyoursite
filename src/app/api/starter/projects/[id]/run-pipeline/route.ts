@@ -138,7 +138,8 @@ export async function POST(
           await advanceStage(id); // → stage 9
 
           if (qaReport.summary.fail === 0) {
-            await advanceStage(id); // → stage 10 (Complete)
+            await advanceStage(id); // → stage 10 (Complete) — in_progress
+            await advanceStage(id); // finalize → done
             return;
           }
 
@@ -164,7 +165,8 @@ export async function POST(
             await advanceStage(id);
 
             if (qaReport.summary.fail === 0) {
-              await advanceStage(id);
+              await advanceStage(id); // → stage 10 (Complete) — in_progress
+              await advanceStage(id); // finalize → done
               return;
             }
           }
