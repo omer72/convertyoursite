@@ -13,8 +13,9 @@ Return ONLY valid JSON with this structure (no markdown, no explanation):
 }
 
 Requirements:
-- Use Next.js App Router (app/ directory)
-- Use Tailwind CSS v4 for styling (no tailwind.config — uses CSS-based config)
+- Use Next.js 14 App Router (app/ directory) — pin "next": "14.2.29" in package.json
+- Use Tailwind CSS v3 for styling (include tailwind.config.js with content paths)
+- The package.json MUST include these devDependencies: typescript, @types/react, @types/node, @types/react-dom
 - Include: package.json, tsconfig.json, next.config.mjs, postcss.config.mjs, src/app/globals.css, src/app/layout.tsx, src/app/page.tsx, and additional page files
 - Use the design spec colors, fonts, and layout exactly
 - Populate pages with REAL content from the scrape data — headings, paragraphs, images
