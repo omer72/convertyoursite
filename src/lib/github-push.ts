@@ -156,17 +156,24 @@ export async function pushToGitHub(
   // Step 1: Create blobs for all files
   const blobShas: { path: string; sha: string }[] = [];
   for (const file of allFiles) {
-    const blobRes = await githubApi(`/repos/${repoFullName}/git/blobs`, token, {
-      method: "POST",
-      body: {
-        content: Buffer.from(file.content).toString("base64"),
-        encoding: "base64",
-      },
-    });
-    if (!blobRes.ok) {
-      throw new Error(`Failed to create blob for ${file.path}: ${blobRes.status}`);
+    let blobRes: Response | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      blobRes = await githubApi(`/repos/${repoFullName}/git/blobs`, token, {
+        method: "POST",
+        body: {
+          content: Buffer.from(file.content).toString("base64"),
+          encoding: "base64",
+        },
+      });
+      if (blobRes.ok) break;
+      if (blobRes.status === 404 && attempt < 2) {
+        await sleep(3000);
+        continue;
+      }
+      const errBody = await blobRes.text();
+      throw new Error(`Failed to create blob for ${file.path}: ${blobRes.status} — ${errBody}`);
     }
-    const blob = (await blobRes.json()) as { sha: string };
+    const blob = (await blobRes!.json()) as { sha: string };
     blobShas.push({ path: file.path, sha: blob.sha });
   }
 
@@ -183,7 +190,8 @@ export async function pushToGitHub(
     },
   });
   if (!treeRes.ok) {
-    throw new Error(`Failed to create tree: ${treeRes.status}`);
+    const errBody = await treeRes.text();
+    throw new Error(`Failed to create tree: ${treeRes.status} — ${errBody}`);
   }
   const tree = (await treeRes.json()) as { sha: string };
 
@@ -196,7 +204,8 @@ export async function pushToGitHub(
     },
   });
   if (!commitRes.ok) {
-    throw new Error(`Failed to create commit: ${commitRes.status}`);
+    const errBody = await commitRes.text();
+    throw new Error(`Failed to create commit: ${commitRes.status} — ${errBody}`);
   }
   const commit = (await commitRes.json()) as { sha: string };
 
