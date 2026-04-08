@@ -28,7 +28,8 @@ Rules:
 - Return COMPLETE file contents for each changed file (not diffs)
 - Keep the existing design, colors, and layout intact
 - Only modify files that need changes
-- Use the same tech stack (Next.js App Router, Tailwind CSS v4, TypeScript)
+- Use the same tech stack (Next.js 14 App Router, Tailwind CSS v3, TypeScript)
+- Every .tsx file MUST use \`export default function\` syntax and start with \`import React from "react";\`
 - Preserve all existing working functionality`;
 
 export async function generateFixes(

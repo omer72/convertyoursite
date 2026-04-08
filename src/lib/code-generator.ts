@@ -17,6 +17,8 @@ Requirements:
 - Use Tailwind CSS v3 for styling (include tailwind.config.js with content paths)
 - The package.json MUST include these devDependencies: typescript, @types/react, @types/node, @types/react-dom
 - Include: package.json, tsconfig.json, next.config.mjs, postcss.config.js, tailwind.config.js, src/app/globals.css, src/app/layout.tsx, src/app/page.tsx, and additional page files
+- Every .tsx file MUST use \`export default function ComponentName()\` syntax (not arrow functions, not const)
+- Every .tsx file MUST start with \`import React from "react";\`
 - Use the design spec colors, fonts, and layout exactly
 - Populate pages with REAL content from the scrape data — headings, paragraphs, images
 - Include responsive navigation with mobile hamburger menu
