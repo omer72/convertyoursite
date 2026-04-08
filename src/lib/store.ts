@@ -1,5 +1,5 @@
 import { PIPELINE_STAGES, PipelineStage } from "@/lib/pipeline-stages";
-import { put, list as blobList, del, get as blobGet } from "@vercel/blob";
+import { put, list as blobList, del } from "@vercel/blob";
 
 export interface ScrapePageResult {
   url: string;
@@ -126,7 +126,7 @@ async function saveToBlob(project: StoredProject): Promise<void> {
   cache.set(project.id, { project, at: Date.now() });
   try {
     await put(blobPath(project.id), JSON.stringify(project), {
-      access: "private",
+      access: "public",
       addRandomSuffix: false,
       allowOverwrite: true,
       contentType: "application/json",
@@ -143,10 +143,12 @@ async function loadFromBlob(id: string): Promise<StoredProject | undefined> {
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.project;
 
   try {
-    const result = await blobGet(blobPath(id), { access: "private" });
-    if (!result) return undefined;
-    const text = await new Response(result.stream).text();
-    const project = JSON.parse(text) as StoredProject;
+    const { blobs } = await blobList({ prefix: blobPath(id) });
+    const blob = blobs[0];
+    if (!blob) return undefined;
+    const res = await fetch(blob.url);
+    if (!res.ok) return undefined;
+    const project = (await res.json()) as StoredProject;
     cache.set(id, { project, at: Date.now() });
     return project;
   } catch {
@@ -166,13 +168,13 @@ async function loadAllFromBlob(): Promise<StoredProject[]> {
     let readErrors = 0;
     for (const blob of blobs) {
       try {
-        const result = await blobGet(blob.pathname, { access: "private" });
-        if (!result) {
+        const res = await fetch(blob.url);
+        if (!res.ok) {
           readErrors++;
-          lastBlobError = `Blob read failed: not found for ${blob.pathname}`;
+          lastBlobError = `Blob read failed: ${res.status} for ${blob.pathname}`;
           continue;
         }
-        const text = await new Response(result.stream).text();
+        const text = await res.text();
         const project = JSON.parse(text) as StoredProject;
         cache.set(project.id, { project, at: now });
         projects.push(project);
