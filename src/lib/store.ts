@@ -164,21 +164,29 @@ async function loadAllFromBlob(): Promise<StoredProject[]> {
     const { blobs } = await blobList({ prefix: BLOB_PREFIX });
     const projects: StoredProject[] = [];
     const now = Date.now();
+    let readErrors = 0;
     for (const blob of blobs) {
       try {
         const res = await fetch(blob.downloadUrl);
-        if (!res.ok) continue;
+        if (!res.ok) {
+          readErrors++;
+          lastBlobError = `Blob read failed: HTTP ${res.status} for ${blob.pathname}`;
+          continue;
+        }
         const project = (await res.json()) as StoredProject;
         cache.set(project.id, { project, at: now });
         projects.push(project);
-      } catch {
-        // skip corrupt blobs
+      } catch (err) {
+        readErrors++;
+        lastBlobError = `Blob read error: ${err instanceof Error ? err.message : String(err)}`;
       }
     }
+    if (readErrors === 0 && blobs.length > 0) lastBlobError = null;
+    if (blobs.length === 0) lastBlobError = lastBlobError ?? `Blob list empty (prefix: ${BLOB_PREFIX}) — writes may be failing silently`;
     allLoadedAt = now;
     return projects;
-  } catch {
-    // Blob unavailable — return whatever is in cache
+  } catch (err) {
+    lastBlobError = `Blob list failed: ${err instanceof Error ? err.message : String(err)}`;
     return Array.from(cache.values()).map((c) => c.project);
   }
 }
