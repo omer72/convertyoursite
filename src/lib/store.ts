@@ -99,8 +99,14 @@ export interface StoredProject {
   fixIterations?: number;
 }
 
-// In-memory store — replace with a Vercel Marketplace database for production persistence.
-const projects = new Map<string, StoredProject>();
+// In-memory store shared via globalThis so all API routes within the same
+// Vercel function instance share the same data. Without this, each route
+// gets its own module-scope Map and cannot see projects created by other routes.
+// Replace with a Vercel Marketplace database for production persistence.
+const globalKey = "__starter_projects__";
+const projects: Map<string, StoredProject> =
+  (globalThis as Record<string, unknown>)[globalKey] as Map<string, StoredProject> ??
+  ((globalThis as Record<string, unknown>)[globalKey] = new Map<string, StoredProject>());
 
 export function listProjects(): StoredProject[] {
   return Array.from(projects.values()).sort(
