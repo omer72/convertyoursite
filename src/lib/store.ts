@@ -1,5 +1,5 @@
 import { PIPELINE_STAGES, PipelineStage } from "@/lib/pipeline-stages";
-import { readFileSync, writeFileSync } from "fs";
+import { put, list as blobList, del } from "@vercel/blob";
 
 export interface ScrapePageResult {
   url: string;
@@ -100,56 +100,106 @@ export interface StoredProject {
   fixIterations?: number;
 }
 
-// Persistent store using /tmp file + globalThis in-memory cache.
-// On Vercel, each API route can be a separate function instance. /tmp is writable
-// and shared within an instance, so we use it as a write-through cache to persist
-// projects across module reloads and route boundaries within the same instance.
-// For cross-instance persistence, replace with a Vercel Marketplace database.
-const STORE_PATH = "/tmp/starter-projects.json";
-const globalKey = "__starter_projects__";
+// ---------------------------------------------------------------------------
+// Persistent store using Vercel Blob.
+// Each project is stored as `starter-projects/{id}.json` in the blob store.
+// An in-memory cache with a short TTL avoids redundant reads during the same
+// request or rapid polling.
+// ---------------------------------------------------------------------------
 
-function getProjects(): Map<string, StoredProject> {
-  // Check globalThis cache first
-  let map = (globalThis as Record<string, unknown>)[globalKey] as Map<string, StoredProject> | undefined;
-  if (map && map.size > 0) return map;
+const BLOB_PREFIX = "starter-projects/";
+const CACHE_TTL_MS = 4_000; // 4 seconds — shorter than the 8s poll interval
 
-  // Try loading from /tmp file
-  map = new Map<string, StoredProject>();
+// In-memory write-through cache (per function instance)
+const cache = new Map<string, { project: StoredProject; at: number }>();
+let allLoadedAt = 0;
+
+function blobPath(id: string): string {
+  return `${BLOB_PREFIX}${id}.json`;
+}
+
+async function saveToBlob(project: StoredProject): Promise<void> {
+  await put(blobPath(project.id), JSON.stringify(project), {
+    access: "public",
+    addRandomSuffix: false,
+    contentType: "application/json",
+  });
+  cache.set(project.id, { project, at: Date.now() });
+}
+
+async function loadFromBlob(id: string): Promise<StoredProject | undefined> {
+  const cached = cache.get(id);
+  if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.project;
+
   try {
-    const data = readFileSync(STORE_PATH, "utf-8");
-    const parsed = JSON.parse(data) as Record<string, StoredProject>;
-    for (const [k, v] of Object.entries(parsed)) {
-      map.set(k, v);
+    const { blobs } = await blobList({ prefix: blobPath(id) });
+    const blob = blobs.find((b) => b.pathname === blobPath(id));
+    if (!blob) return undefined;
+    const res = await fetch(blob.url);
+    if (!res.ok) return undefined;
+    const project = (await res.json()) as StoredProject;
+    cache.set(id, { project, at: Date.now() });
+    return project;
+  } catch {
+    return undefined;
+  }
+}
+
+async function loadAllFromBlob(): Promise<StoredProject[]> {
+  if (Date.now() - allLoadedAt < CACHE_TTL_MS && cache.size > 0) {
+    return Array.from(cache.values()).map((c) => c.project);
+  }
+
+  try {
+    const { blobs } = await blobList({ prefix: BLOB_PREFIX });
+    const projects: StoredProject[] = [];
+    const now = Date.now();
+    for (const blob of blobs) {
+      try {
+        const res = await fetch(blob.url);
+        if (!res.ok) continue;
+        const project = (await res.json()) as StoredProject;
+        cache.set(project.id, { project, at: now });
+        projects.push(project);
+      } catch {
+        // skip corrupt blobs
+      }
     }
+    allLoadedAt = now;
+    return projects;
   } catch {
-    // File doesn't exist or is corrupt — start fresh
-  }
-  (globalThis as Record<string, unknown>)[globalKey] = map;
-  return map;
-}
-
-function persistProjects(): void {
-  const map = getProjects();
-  const obj: Record<string, StoredProject> = {};
-  for (const [k, v] of map) {
-    obj[k] = v;
-  }
-  try {
-    writeFileSync(STORE_PATH, JSON.stringify(obj));
-  } catch {
-    // /tmp write failed — in-memory state still works
+    // Blob unavailable — return whatever is in cache
+    return Array.from(cache.values()).map((c) => c.project);
   }
 }
 
+// ---------------------------------------------------------------------------
+// Public API (unchanged signatures — all now async-safe via background saves)
+// ---------------------------------------------------------------------------
 
 export function listProjects(): StoredProject[] {
-  return Array.from(getProjects().values()).sort(
+  // Synchronous return from cache; loadAllFromBlob called separately by routes
+  return Array.from(cache.values())
+    .map((c) => c.project)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+/** Async version — routes should prefer this */
+export async function listProjectsAsync(): Promise<StoredProject[]> {
+  const projects = await loadAllFromBlob();
+  return projects.sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 }
 
 export function getProject(id: string): StoredProject | undefined {
-  return getProjects().get(id);
+  const cached = cache.get(id);
+  return cached?.project;
+}
+
+/** Async version — routes should prefer this for cross-function reads */
+export async function getProjectAsync(id: string): Promise<StoredProject | undefined> {
+  return loadFromBlob(id);
 }
 
 export function createProject(data: {
@@ -170,41 +220,46 @@ export function createProject(data: {
       status: i === 0 ? ("in_progress" as const) : ("pending" as const),
     })),
   };
-  getProjects().set(project.id, project);
-  persistProjects();
+  cache.set(project.id, { project, at: Date.now() });
+  // Fire and forget — the blob save runs in the background
+  saveToBlob(project).catch(() => {});
   return project;
 }
 
 export function deleteProject(id: string): boolean {
-  const result = getProjects().delete(id);
-  persistProjects();
-  return result;
+  const existed = cache.has(id);
+  cache.delete(id);
+  del(blobPath(id)).catch(() => {});
+  return existed;
 }
 
 export function updateProject(id: string, updates: Partial<StoredProject>): StoredProject | null {
-  const project = getProjects().get(id);
-  if (!project) return null;
+  const cached = cache.get(id);
+  if (!cached) return null;
+  const project = cached.project;
   Object.assign(project, updates);
-  getProjects().set(id, project);
-  persistProjects();
+  cache.set(id, { project, at: Date.now() });
+  saveToBlob(project).catch(() => {});
   return project;
 }
 
 export function setStageError(id: string, errorMessage: string): StoredProject | null {
-  const project = getProjects().get(id);
-  if (!project) return null;
+  const cached = cache.get(id);
+  if (!cached) return null;
+  const project = cached.project;
   const currentIdx = project.pipelineStage - 1;
   project.stages[currentIdx].status = "error";
   project.pipelineStatus = "error";
   project.pipelineError = errorMessage;
-  getProjects().set(id, project);
-  persistProjects();
+  cache.set(id, { project, at: Date.now() });
+  saveToBlob(project).catch(() => {});
   return project;
 }
 
 export function advanceStage(id: string): StoredProject | null {
-  const project = getProjects().get(id);
-  if (!project) return null;
+  const cached = cache.get(id);
+  if (!cached) return null;
+  const project = cached.project;
 
   const currentIdx = project.pipelineStage - 1;
   if (currentIdx >= project.stages.length - 1) {
@@ -216,14 +271,16 @@ export function advanceStage(id: string): StoredProject | null {
     project.stages[currentIdx + 1].status = "in_progress";
   }
 
-  getProjects().set(id, project);
-  persistProjects();
+  cache.set(id, { project, at: Date.now() });
+  saveToBlob(project).catch(() => {});
   return project;
 }
 
 export function rewindToStage(id: string, stage: number): StoredProject | null {
-  const project = getProjects().get(id);
-  if (!project || stage < 1 || stage > project.stages.length) return null;
+  const cached = cache.get(id);
+  if (!cached) return null;
+  const project = cached.project;
+  if (stage < 1 || stage > project.stages.length) return null;
 
   project.pipelineStage = stage;
   project.pipelineStatus = "in_progress";
@@ -239,7 +296,7 @@ export function rewindToStage(id: string, stage: number): StoredProject | null {
     }
   }
 
-  getProjects().set(id, project);
-  persistProjects();
+  cache.set(id, { project, at: Date.now() });
+  saveToBlob(project).catch(() => {});
   return project;
 }

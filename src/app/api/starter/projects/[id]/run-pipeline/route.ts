@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { checkSession } from "@/lib/auth";
-import { getProject, updateProject, advanceStage, setStageError, rewindToStage } from "@/lib/store";
+import { getProject, getProjectAsync, updateProject, advanceStage, setStageError, rewindToStage } from "@/lib/store";
 import { scrapeWebsite } from "@/lib/scraper";
 import { generateDesign } from "@/lib/design-generator";
 import { generateCode } from "@/lib/code-generator";
@@ -31,7 +31,7 @@ export async function POST(
   }
 
   const { id } = await params;
-  const project = getProject(id);
+  const project = await getProjectAsync(id);
   if (!project) {
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }

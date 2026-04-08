@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { checkSession } from "@/lib/auth";
-import { listProjects, createProject, advanceStage, updateProject, setStageError, getProject, rewindToStage } from "@/lib/store";
+import { listProjectsAsync, createProject, advanceStage, updateProject, setStageError, getProject, rewindToStage } from "@/lib/store";
 import { scrapeWebsite } from "@/lib/scraper";
 import { generateDesign } from "@/lib/design-generator";
 import { generateCode } from "@/lib/code-generator";
@@ -32,7 +32,7 @@ export async function GET() {
   const denied = await requireAuth();
   if (denied) return denied;
 
-  return NextResponse.json(listProjects());
+  return NextResponse.json(await listProjectsAsync());
 }
 
 export async function POST(request: NextRequest) {

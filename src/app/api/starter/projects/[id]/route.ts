@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkSession } from "@/lib/auth";
-import { getProject, deleteProject } from "@/lib/store";
+import { getProjectAsync, deleteProject } from "@/lib/store";
 
 async function requireAuth() {
   if (!(await checkSession())) {
@@ -17,7 +17,7 @@ export async function GET(
   if (denied) return denied;
 
   const { id } = await params;
-  const project = getProject(id);
+  const project = await getProjectAsync(id);
   if (!project) {
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
