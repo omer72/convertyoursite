@@ -18,6 +18,7 @@ export default function StarterPage() {
   const [auth, setAuth] = useState<AuthState>("checking");
   const [view, setView] = useState<View>("dashboard");
   const [projects, setProjects] = useState<Project[]>([]);
+  const [blobError, setBlobError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Check auth via API on mount
@@ -34,13 +35,20 @@ export default function StarterPage() {
     try {
       const res = await fetch("/api/starter/projects");
       if (!res.ok) return;
-      let data: Project[];
+      let body: unknown;
       try {
-        data = await res.json();
+        body = await res.json();
       } catch {
         return;
       }
-      setProjects(data);
+      // Handle both formats: { projects: [...], _blobError? } or plain array (legacy)
+      if (body && typeof body === "object" && "projects" in body) {
+        const envelope = body as { projects: Project[]; _blobError?: string };
+        setProjects(envelope.projects);
+        setBlobError(envelope._blobError ?? null);
+      } else if (Array.isArray(body)) {
+        setProjects(body as Project[]);
+      }
     } catch {
       // silently ignore polling failures
     }
@@ -141,6 +149,22 @@ export default function StarterPage() {
   return (
     <Fade in timeout={350} key="dashboard">
       <Box>
+        {blobError && (
+          <Box sx={{
+            mx: 3, mt: 2, p: 2, borderRadius: "0.5rem",
+            bgcolor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)",
+          }}>
+            <Box component="strong" sx={{ color: "#dc2626", fontSize: "0.85rem" }}>
+              Storage Error — projects will not persist
+            </Box>
+            <Box sx={{ color: "#b91c1c", fontSize: "0.8rem", mt: 0.5 }}>
+              {blobError}
+            </Box>
+            <Box sx={{ color: "#6b7280", fontSize: "0.75rem", mt: 0.5 }}>
+              Check that BLOB_READ_WRITE_TOKEN is set in Vercel env vars and the Blob store is connected to this project.
+            </Box>
+          </Box>
+        )}
         <PipelineDashboard
           projects={projects}
           onNewProject={() => setView("form")}

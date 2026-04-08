@@ -32,7 +32,13 @@ export async function GET() {
   const denied = await requireAuth();
   if (denied) return denied;
 
-  return NextResponse.json(await listProjectsAsync());
+  const projects = await listProjectsAsync();
+  const blobError = getLastBlobError();
+  return NextResponse.json({
+    projects,
+    _blobConfigured: !blobError,
+    ...(blobError ? { _blobError: blobError } : {}),
+  });
 }
 
 export async function POST(request: NextRequest) {
