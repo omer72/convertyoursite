@@ -31,6 +31,35 @@ function slugify(name: string): string {
     .slice(0, 100);
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Wait for the repo to be accessible and have at least one commit.
+ * GitHub can take a few seconds after creation (especially with auto_init).
+ */
+async function waitForRepoReady(
+  repoFullName: string,
+  token: string,
+  maxAttempts = 10
+): Promise<void> {
+  for (let i = 0; i < maxAttempts; i++) {
+    const res = await githubApi(`/repos/${repoFullName}/git/ref/heads/main`, token);
+    if (res.ok) return;
+    // Also check for 'master' branch (some GitHub configs default to master)
+    const masterRes = await githubApi(`/repos/${repoFullName}/git/ref/heads/master`, token);
+    if (masterRes.ok) return;
+    await sleep(2000);
+  }
+  throw new Error(
+    `Repo ${repoFullName} is not ready after ${maxAttempts} attempts. ` +
+    `This usually means the GitHub token does not have Contents read/write permission on this repo, ` +
+    `or the repo was not created with an initial commit. ` +
+    `Try using a classic Personal Access Token with 'repo' scope instead of a fine-grained token.`
+  );
+}
+
 export async function pushToGitHub(
   clientName: string,
   generatedCode: GeneratedCode
@@ -49,43 +78,31 @@ export async function pushToGitHub(
   }
   const user = (await userRes.json()) as { login: string };
 
-  // Create repository
-  const createRes = await githubApi("/user/repos", token, {
-    method: "POST",
-    body: {
-      name: repoName,
-      description: `Generated website for ${clientName}`,
-      private: false,
-      auto_init: true,
-    },
-  });
+  const repoFullName = `${user.login}/${repoName}`;
 
-  if (!createRes.ok) {
-    const err = await createRes.json();
-    // If repo already exists, that's ok — we'll push to it
-    if (createRes.status !== 422) {
+  // Check if repo already exists
+  const existingRepo = await githubApi(`/repos/${repoFullName}`, token);
+
+  if (!existingRepo.ok) {
+    // Repo doesn't exist — create it with auto_init so it has an initial commit
+    const createRes = await githubApi("/user/repos", token, {
+      method: "POST",
+      body: {
+        name: repoName,
+        description: `Generated website for ${clientName}`,
+        private: false,
+        auto_init: true,
+      },
+    });
+
+    if (!createRes.ok) {
+      const err = await createRes.json();
       throw new Error(`Failed to create repo: ${JSON.stringify(err)}`);
     }
   }
 
-  const repoFullName = `${user.login}/${repoName}`;
-
-  // Ensure repo is initialized (has at least one commit).
-  // The Git database API returns 409 on empty repos.
-  const mainRef = await githubApi(`/repos/${repoFullName}/git/ref/heads/main`, token);
-  if (!mainRef.ok) {
-    // No main branch — repo is empty. Seed it via the Contents API.
-    const initRes = await githubApi(`/repos/${repoFullName}/contents/README.md`, token, {
-      method: "PUT",
-      body: {
-        message: "Initial commit",
-        content: Buffer.from(`# ${clientName} site\n`).toString("base64"),
-      },
-    });
-    if (!initRes.ok && initRes.status !== 422) {
-      throw new Error(`Failed to initialize empty repo: ${initRes.status}`);
-    }
-  }
+  // Wait for repo to be accessible and initialized
+  await waitForRepoReady(repoFullName, token);
 
   // Create all files via the Git Trees API for a single atomic commit
   // Step 1: Create blobs for all files
