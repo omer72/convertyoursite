@@ -143,16 +143,16 @@ async function loadFromBlob(id: string): Promise<StoredProject | undefined> {
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.project;
 
   try {
-    const { blobs } = await blobList({ prefix: blobPath(id) });
+    const { blobs } = await blobList({ prefix: `${BLOB_PREFIX}${id}` });
     const blob = blobs[0];
-    if (!blob) return undefined;
+    if (!blob) return cached?.project; // fall back to stale cache
     const res = await fetch(blob.url);
-    if (!res.ok) return undefined;
+    if (!res.ok) return cached?.project; // fall back to stale cache
     const project = (await res.json()) as StoredProject;
     cache.set(id, { project, at: Date.now() });
     return project;
   } catch {
-    return undefined;
+    return cached?.project; // fall back to stale cache
   }
 }
 
