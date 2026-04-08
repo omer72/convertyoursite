@@ -126,7 +126,7 @@ async function saveToBlob(project: StoredProject): Promise<void> {
   cache.set(project.id, { project, at: Date.now() });
   try {
     await put(blobPath(project.id), JSON.stringify(project), {
-      access: "public",
+      access: "private",
       addRandomSuffix: false,
       allowOverwrite: true,
       contentType: "application/json",
