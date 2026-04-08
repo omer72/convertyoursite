@@ -1,4 +1,5 @@
 import { PIPELINE_STAGES, PipelineStage } from "@/lib/pipeline-stages";
+import { readFileSync, writeFileSync } from "fs";
 
 export interface ScrapePageResult {
   url: string;
@@ -99,23 +100,56 @@ export interface StoredProject {
   fixIterations?: number;
 }
 
-// In-memory store shared via globalThis so all API routes within the same
-// Vercel function instance share the same data. Without this, each route
-// gets its own module-scope Map and cannot see projects created by other routes.
-// Replace with a Vercel Marketplace database for production persistence.
+// Persistent store using /tmp file + globalThis in-memory cache.
+// On Vercel, each API route can be a separate function instance. /tmp is writable
+// and shared within an instance, so we use it as a write-through cache to persist
+// projects across module reloads and route boundaries within the same instance.
+// For cross-instance persistence, replace with a Vercel Marketplace database.
+const STORE_PATH = "/tmp/starter-projects.json";
 const globalKey = "__starter_projects__";
-const projects: Map<string, StoredProject> =
-  (globalThis as Record<string, unknown>)[globalKey] as Map<string, StoredProject> ??
-  ((globalThis as Record<string, unknown>)[globalKey] = new Map<string, StoredProject>());
+
+function getProjects(): Map<string, StoredProject> {
+  // Check globalThis cache first
+  let map = (globalThis as Record<string, unknown>)[globalKey] as Map<string, StoredProject> | undefined;
+  if (map && map.size > 0) return map;
+
+  // Try loading from /tmp file
+  map = new Map<string, StoredProject>();
+  try {
+    const data = readFileSync(STORE_PATH, "utf-8");
+    const parsed = JSON.parse(data) as Record<string, StoredProject>;
+    for (const [k, v] of Object.entries(parsed)) {
+      map.set(k, v);
+    }
+  } catch {
+    // File doesn't exist or is corrupt — start fresh
+  }
+  (globalThis as Record<string, unknown>)[globalKey] = map;
+  return map;
+}
+
+function persistProjects(): void {
+  const map = getProjects();
+  const obj: Record<string, StoredProject> = {};
+  for (const [k, v] of map) {
+    obj[k] = v;
+  }
+  try {
+    writeFileSync(STORE_PATH, JSON.stringify(obj));
+  } catch {
+    // /tmp write failed — in-memory state still works
+  }
+}
+
 
 export function listProjects(): StoredProject[] {
-  return Array.from(projects.values()).sort(
+  return Array.from(getProjects().values()).sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 }
 
 export function getProject(id: string): StoredProject | undefined {
-  return projects.get(id);
+  return getProjects().get(id);
 }
 
 export function createProject(data: {
@@ -136,35 +170,40 @@ export function createProject(data: {
       status: i === 0 ? ("in_progress" as const) : ("pending" as const),
     })),
   };
-  projects.set(project.id, project);
+  getProjects().set(project.id, project);
+  persistProjects();
   return project;
 }
 
 export function deleteProject(id: string): boolean {
-  return projects.delete(id);
+  const result = getProjects().delete(id);
+  persistProjects();
+  return result;
 }
 
 export function updateProject(id: string, updates: Partial<StoredProject>): StoredProject | null {
-  const project = projects.get(id);
+  const project = getProjects().get(id);
   if (!project) return null;
   Object.assign(project, updates);
-  projects.set(id, project);
+  getProjects().set(id, project);
+  persistProjects();
   return project;
 }
 
 export function setStageError(id: string, errorMessage: string): StoredProject | null {
-  const project = projects.get(id);
+  const project = getProjects().get(id);
   if (!project) return null;
   const currentIdx = project.pipelineStage - 1;
   project.stages[currentIdx].status = "error";
   project.pipelineStatus = "error";
   project.pipelineError = errorMessage;
-  projects.set(id, project);
+  getProjects().set(id, project);
+  persistProjects();
   return project;
 }
 
 export function advanceStage(id: string): StoredProject | null {
-  const project = projects.get(id);
+  const project = getProjects().get(id);
   if (!project) return null;
 
   const currentIdx = project.pipelineStage - 1;
@@ -177,12 +216,13 @@ export function advanceStage(id: string): StoredProject | null {
     project.stages[currentIdx + 1].status = "in_progress";
   }
 
-  projects.set(id, project);
+  getProjects().set(id, project);
+  persistProjects();
   return project;
 }
 
 export function rewindToStage(id: string, stage: number): StoredProject | null {
-  const project = projects.get(id);
+  const project = getProjects().get(id);
   if (!project || stage < 1 || stage > project.stages.length) return null;
 
   project.pipelineStage = stage;
@@ -199,6 +239,7 @@ export function rewindToStage(id: string, stage: number): StoredProject | null {
     }
   }
 
-  projects.set(id, project);
+  getProjects().set(id, project);
+  persistProjects();
   return project;
 }
