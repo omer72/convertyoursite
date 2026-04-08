@@ -1,5 +1,5 @@
 import { PIPELINE_STAGES, PipelineStage } from "@/lib/pipeline-stages";
-import { put, list as blobList, del } from "@vercel/blob";
+import { put, list as blobList, del, get as blobGet } from "@vercel/blob";
 
 export interface ScrapePageResult {
   url: string;
@@ -143,12 +143,10 @@ async function loadFromBlob(id: string): Promise<StoredProject | undefined> {
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.project;
 
   try {
-    const { blobs } = await blobList({ prefix: blobPath(id) });
-    const blob = blobs.find((b) => b.pathname === blobPath(id));
-    if (!blob) return undefined;
-    const res = await fetch(blob.downloadUrl);
-    if (!res.ok) return undefined;
-    const project = (await res.json()) as StoredProject;
+    const result = await blobGet(blobPath(id), { access: "private" });
+    if (!result) return undefined;
+    const text = await new Response(result.stream).text();
+    const project = JSON.parse(text) as StoredProject;
     cache.set(id, { project, at: Date.now() });
     return project;
   } catch {
@@ -168,13 +166,14 @@ async function loadAllFromBlob(): Promise<StoredProject[]> {
     let readErrors = 0;
     for (const blob of blobs) {
       try {
-        const res = await fetch(blob.downloadUrl);
-        if (!res.ok) {
+        const result = await blobGet(blob.pathname, { access: "private" });
+        if (!result) {
           readErrors++;
-          lastBlobError = `Blob read failed: HTTP ${res.status} for ${blob.pathname}`;
+          lastBlobError = `Blob read failed: not found for ${blob.pathname}`;
           continue;
         }
-        const project = (await res.json()) as StoredProject;
+        const text = await new Response(result.stream).text();
+        const project = JSON.parse(text) as StoredProject;
         cache.set(project.id, { project, at: now });
         projects.push(project);
       } catch (err) {
