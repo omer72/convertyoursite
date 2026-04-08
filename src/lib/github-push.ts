@@ -60,6 +60,48 @@ async function waitForRepoReady(
   );
 }
 
+const GITHUB_PAGES_WORKFLOW = `name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx next build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: \${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+`;
+
 export async function pushToGitHub(
   clientName: string,
   generatedCode: GeneratedCode
@@ -104,10 +146,16 @@ export async function pushToGitHub(
   // Wait for repo to be accessible and initialized
   await waitForRepoReady(repoFullName, token);
 
+  // Inject the GitHub Pages deployment workflow into the file list
+  const allFiles = [
+    ...generatedCode.files,
+    { path: ".github/workflows/deploy.yml", content: GITHUB_PAGES_WORKFLOW },
+  ];
+
   // Create all files via the Git Trees API for a single atomic commit
   // Step 1: Create blobs for all files
   const blobShas: { path: string; sha: string }[] = [];
-  for (const file of generatedCode.files) {
+  for (const file of allFiles) {
     const blobRes = await githubApi(`/repos/${repoFullName}/git/blobs`, token, {
       method: "POST",
       body: {
