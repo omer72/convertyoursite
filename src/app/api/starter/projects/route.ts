@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { checkSession } from "@/lib/auth";
-import { listProjectsAsync, createProject, advanceStage, updateProject, setStageError, getProject, rewindToStage, getLastBlobError } from "@/lib/store";
+import { listProjectsAsync, createProject, advanceStage, updateProject, setStageError, getProject, getProjectAsync, rewindToStage, getLastBlobError } from "@/lib/store";
 import { scrapeWebsite } from "@/lib/scraper";
 import { generateDesign } from "@/lib/design-generator";
 import { generateCode } from "@/lib/code-generator";
@@ -165,13 +165,16 @@ export async function POST(request: NextRequest) {
         let iterations = 0;
         while (qaReport.summary.fail > 0 && iterations < MAX_FIX_ITERATIONS) {
           iterations++;
-          const current = getProject(id)!;
+          const current = await getProjectAsync(id);
+          if (!current?.generatedCode || !current?.scrapeResult) {
+            throw new Error("Project data missing for fix generation — generatedCode or scrapeResult not found");
+          }
 
           // Generate AI-powered fixes
           const fixedCode = await generateFixes(
             qaReport,
-            current.scrapeResult!,
-            current.generatedCode!,
+            current.scrapeResult,
+            current.generatedCode,
             current.clientName
           );
           await updateProject(id, { generatedCode: fixedCode, fixIterations: iterations });
