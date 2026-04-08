@@ -25,9 +25,14 @@ Requirements:
 - Include a simple footer with contact info from scrape data
 - All image src attributes should use the original scraped URLs
 - Do NOT use any external component libraries — just Tailwind CSS
-- The next.config.mjs MUST include \`output: "export"\` so the site builds to static HTML in the \`out/\` directory (required for GitHub Pages deployment)
+- The next.config.mjs MUST use this exact format (no defineConfig, no imports from 'next'):
+  \`\`\`
+  /** @type {import('next').NextConfig} */
+  const nextConfig = { output: "export", images: { unoptimized: true } };
+  export default nextConfig;
+  \`\`\`
 - Do NOT use \`next/image\` — use plain \`<img>\` tags instead (next/image requires a server and is incompatible with static export)
-- Use TypeScript for all files`;
+- Use TypeScript for all .tsx/.ts files but next.config.mjs must be plain JavaScript`;
 
 export async function generateCode(
   design: DesignSpec,
