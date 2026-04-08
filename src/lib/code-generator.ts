@@ -15,7 +15,7 @@ Return ONLY valid JSON with this structure (no markdown, no explanation):
 Requirements:
 - Use Next.js App Router (app/ directory)
 - Use Tailwind CSS v4 for styling (no tailwind.config — uses CSS-based config)
-- Include: package.json, tsconfig.json, next.config.ts, postcss.config.mjs, src/app/globals.css, src/app/layout.tsx, src/app/page.tsx, and additional page files
+- Include: package.json, tsconfig.json, next.config.mjs, postcss.config.mjs, src/app/globals.css, src/app/layout.tsx, src/app/page.tsx, and additional page files
 - Use the design spec colors, fonts, and layout exactly
 - Populate pages with REAL content from the scrape data — headings, paragraphs, images
 - Include responsive navigation with mobile hamburger menu
@@ -25,7 +25,7 @@ Requirements:
 - Include a simple footer with contact info from scrape data
 - All image src attributes should use the original scraped URLs
 - Do NOT use any external component libraries — just Tailwind CSS
-- The next.config.ts MUST include \`output: "export"\` so the site builds to static HTML in the \`out/\` directory (required for GitHub Pages deployment)
+- The next.config.mjs MUST include \`output: "export"\` so the site builds to static HTML in the \`out/\` directory (required for GitHub Pages deployment)
 - Do NOT use \`next/image\` — use plain \`<img>\` tags instead (next/image requires a server and is incompatible with static export)
 - Use TypeScript for all files`;
 
