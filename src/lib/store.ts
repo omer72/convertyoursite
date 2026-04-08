@@ -118,6 +118,10 @@ function blobPath(id: string): string {
   return `${BLOB_PREFIX}${id}.json`;
 }
 
+// Track the last Blob error for diagnostics
+let lastBlobError: string | null = null;
+export function getLastBlobError(): string | null { return lastBlobError; }
+
 async function saveToBlob(project: StoredProject): Promise<void> {
   cache.set(project.id, { project, at: Date.now() });
   try {
@@ -126,9 +130,10 @@ async function saveToBlob(project: StoredProject): Promise<void> {
       addRandomSuffix: false,
       contentType: "application/json",
     });
-  } catch {
-    // Blob unavailable (missing token, quota, etc.) — in-memory cache still works
-    // within the same function instance. Cross-function reads will miss this update.
+    lastBlobError = null;
+  } catch (err) {
+    lastBlobError = err instanceof Error ? err.message : String(err);
+    // Blob unavailable — in-memory cache still works within same function instance.
   }
 }
 

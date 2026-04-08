@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { checkSession } from "@/lib/auth";
-import { listProjectsAsync, createProject, advanceStage, updateProject, setStageError, getProject, rewindToStage } from "@/lib/store";
+import { listProjectsAsync, createProject, advanceStage, updateProject, setStageError, getProject, rewindToStage, getLastBlobError } from "@/lib/store";
 import { scrapeWebsite } from "@/lib/scraper";
 import { generateDesign } from "@/lib/design-generator";
 import { generateCode } from "@/lib/code-generator";
@@ -208,5 +208,9 @@ export async function POST(request: NextRequest) {
     }
   });
 
-  return NextResponse.json(project, { status: 201 });
+  const blobError = getLastBlobError();
+  return NextResponse.json(
+    { ...project, ...(blobError ? { _blobError: blobError } : {}) },
+    { status: 201 }
+  );
 }
