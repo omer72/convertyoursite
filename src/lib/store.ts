@@ -128,6 +128,7 @@ async function saveToBlob(project: StoredProject): Promise<void> {
     await put(blobPath(project.id), JSON.stringify(project), {
       access: "private",
       addRandomSuffix: false,
+      allowOverwrite: true,
       contentType: "application/json",
     });
     lastBlobError = null;
