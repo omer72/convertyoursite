@@ -122,7 +122,7 @@ async function saveToBlob(project: StoredProject): Promise<void> {
   cache.set(project.id, { project, at: Date.now() });
   try {
     await put(blobPath(project.id), JSON.stringify(project), {
-      access: "public",
+      access: "private",
       addRandomSuffix: false,
       contentType: "application/json",
     });
@@ -140,7 +140,7 @@ async function loadFromBlob(id: string): Promise<StoredProject | undefined> {
     const { blobs } = await blobList({ prefix: blobPath(id) });
     const blob = blobs.find((b) => b.pathname === blobPath(id));
     if (!blob) return undefined;
-    const res = await fetch(blob.url);
+    const res = await fetch(blob.downloadUrl);
     if (!res.ok) return undefined;
     const project = (await res.json()) as StoredProject;
     cache.set(id, { project, at: Date.now() });
@@ -161,7 +161,7 @@ async function loadAllFromBlob(): Promise<StoredProject[]> {
     const now = Date.now();
     for (const blob of blobs) {
       try {
-        const res = await fetch(blob.url);
+        const res = await fetch(blob.downloadUrl);
         if (!res.ok) continue;
         const project = (await res.json()) as StoredProject;
         cache.set(project.id, { project, at: now });
