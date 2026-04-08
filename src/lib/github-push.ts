@@ -56,7 +56,7 @@ export async function pushToGitHub(
       name: repoName,
       description: `Generated website for ${clientName}`,
       private: false,
-      auto_init: false,
+      auto_init: true,
     },
   });
 
@@ -69,6 +69,23 @@ export async function pushToGitHub(
   }
 
   const repoFullName = `${user.login}/${repoName}`;
+
+  // Ensure repo is initialized (has at least one commit).
+  // The Git database API returns 409 on empty repos.
+  const mainRef = await githubApi(`/repos/${repoFullName}/git/ref/heads/main`, token);
+  if (!mainRef.ok) {
+    // No main branch — repo is empty. Seed it via the Contents API.
+    const initRes = await githubApi(`/repos/${repoFullName}/contents/README.md`, token, {
+      method: "PUT",
+      body: {
+        message: "Initial commit",
+        content: Buffer.from(`# ${clientName} site\n`).toString("base64"),
+      },
+    });
+    if (!initRes.ok && initRes.status !== 422) {
+      throw new Error(`Failed to initialize empty repo: ${initRes.status}`);
+    }
+  }
 
   // Create all files via the Git Trees API for a single atomic commit
   // Step 1: Create blobs for all files
