@@ -119,12 +119,17 @@ function blobPath(id: string): string {
 }
 
 async function saveToBlob(project: StoredProject): Promise<void> {
-  await put(blobPath(project.id), JSON.stringify(project), {
-    access: "public",
-    addRandomSuffix: false,
-    contentType: "application/json",
-  });
   cache.set(project.id, { project, at: Date.now() });
+  try {
+    await put(blobPath(project.id), JSON.stringify(project), {
+      access: "public",
+      addRandomSuffix: false,
+      contentType: "application/json",
+    });
+  } catch {
+    // Blob unavailable (missing token, quota, etc.) — in-memory cache still works
+    // within the same function instance. Cross-function reads will miss this update.
+  }
 }
 
 async function loadFromBlob(id: string): Promise<StoredProject | undefined> {
