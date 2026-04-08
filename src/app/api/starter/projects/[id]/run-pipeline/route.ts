@@ -45,7 +45,7 @@ export async function POST(
 
   // Rewind to the errored stage and restart
   const errorStage = project.pipelineStage;
-  rewindToStage(id, errorStage);
+  await rewindToStage(id, errorStage);
 
   after(async () => {
     const proj = getProject(id)!;
@@ -57,17 +57,17 @@ export async function POST(
         // Scrape
         try {
           const scrapeResult = await scrapeWebsite(proj.websiteUrl);
-          updateProject(id, { scrapeResult });
-          advanceStage(id);
+          await updateProject(id, { scrapeResult });
+          await advanceStage(id);
         } catch (err) {
-          setStageError(id, extractErrorMessage(err, "Scrape failed"));
+          await setStageError(id, extractErrorMessage(err, "Scrape failed"));
           return;
         }
       }
 
       if (getProject(id)!.pipelineStage <= 3) {
         if (!process.env.OPENAI_API_KEY) {
-          setStageError(id, "OPENAI_API_KEY is not configured — cannot generate design");
+          await setStageError(id, "OPENAI_API_KEY is not configured — cannot generate design");
           return;
         }
         try {
@@ -78,10 +78,10 @@ export async function POST(
             current.description,
             current.specialRequirements
           );
-          updateProject(id, { design });
-          advanceStage(id);
+          await updateProject(id, { design });
+          await advanceStage(id);
         } catch (err) {
-          setStageError(id, extractErrorMessage(err, "Design generation failed"));
+          await setStageError(id, extractErrorMessage(err, "Design generation failed"));
           return;
         }
       }
@@ -90,42 +90,42 @@ export async function POST(
         try {
           const current = getProject(id)!;
           const generatedCode = await generateCode(current.design!, current.scrapeResult!, current.clientName);
-          updateProject(id, { generatedCode });
-          advanceStage(id);
+          await updateProject(id, { generatedCode });
+          await advanceStage(id);
         } catch (err) {
-          setStageError(id, extractErrorMessage(err, "Code generation failed"));
+          await setStageError(id, extractErrorMessage(err, "Code generation failed"));
           return;
         }
       }
 
       if (getProject(id)!.pipelineStage <= 5) {
         if (!process.env.GITHUB_TOKEN) {
-          setStageError(id, "GITHUB_TOKEN is not configured — cannot push to GitHub");
+          await setStageError(id, "GITHUB_TOKEN is not configured — cannot push to GitHub");
           return;
         }
         try {
           const current = getProject(id)!;
           const { repoUrl, repoFullName } = await pushToGitHub(current.clientName, current.generatedCode!);
-          updateProject(id, { repoUrl, repoFullName });
-          advanceStage(id);
+          await updateProject(id, { repoUrl, repoFullName });
+          await advanceStage(id);
         } catch (err) {
-          setStageError(id, extractErrorMessage(err, "GitHub push failed"));
+          await setStageError(id, extractErrorMessage(err, "GitHub push failed"));
           return;
         }
       }
 
       if (getProject(id)!.pipelineStage <= 6) {
-        advanceStage(id); // → Deploying
+        await advanceStage(id); // → Deploying
       }
 
       if (getProject(id)!.pipelineStage <= 7) {
         try {
           const current = getProject(id)!;
           const { deployedUrl } = await deployToGitHubPages(current.repoFullName!);
-          updateProject(id, { deployedUrl });
-          advanceStage(id);
+          await updateProject(id, { deployedUrl });
+          await advanceStage(id);
         } catch (err) {
-          setStageError(id, extractErrorMessage(err, "Deployment failed"));
+          await setStageError(id, extractErrorMessage(err, "Deployment failed"));
           return;
         }
       }
@@ -134,11 +134,11 @@ export async function POST(
         try {
           const current = getProject(id)!;
           let qaReport = await runQaComparison(current.scrapeResult!, current.deployedUrl!, current.websiteUrl);
-          updateProject(id, { qaReport });
-          advanceStage(id); // → stage 9
+          await updateProject(id, { qaReport });
+          await advanceStage(id); // → stage 9
 
           if (qaReport.summary.fail === 0) {
-            advanceStage(id); // → stage 10 (Complete)
+            await advanceStage(id); // → stage 10 (Complete)
             return;
           }
 
@@ -149,27 +149,27 @@ export async function POST(
             const cur = getProject(id)!;
 
             const fixedCode = await generateFixes(qaReport, cur.scrapeResult!, cur.generatedCode!, cur.clientName);
-            updateProject(id, { generatedCode: fixedCode, fixIterations: iterations });
+            await updateProject(id, { generatedCode: fixedCode, fixIterations: iterations });
 
             const { repoUrl, repoFullName } = await pushToGitHub(cur.clientName, fixedCode);
-            updateProject(id, { repoUrl, repoFullName });
+            await updateProject(id, { repoUrl, repoFullName });
 
-            rewindToStage(id, 7);
+            await rewindToStage(id, 7);
             const { deployedUrl } = await deployToGitHubPages(repoFullName);
-            updateProject(id, { deployedUrl });
-            advanceStage(id);
+            await updateProject(id, { deployedUrl });
+            await advanceStage(id);
 
             qaReport = await runQaComparison(cur.scrapeResult!, deployedUrl, cur.websiteUrl);
-            updateProject(id, { qaReport });
-            advanceStage(id);
+            await updateProject(id, { qaReport });
+            await advanceStage(id);
 
             if (qaReport.summary.fail === 0) {
-              advanceStage(id);
+              await advanceStage(id);
               return;
             }
           }
         } catch (err) {
-          setStageError(id, extractErrorMessage(err, "QA/Fix cycle failed"));
+          await setStageError(id, extractErrorMessage(err, "QA/Fix cycle failed"));
         }
       }
     } catch (err) {

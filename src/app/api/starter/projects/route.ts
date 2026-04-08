@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid websiteUrl" }, { status: 400 });
   }
 
-  const project = createProject({
+  const project = await createProject({
     clientName: clientName.trim(),
     websiteUrl: websiteUrl.trim(),
     description: description.trim(),
@@ -68,19 +68,19 @@ export async function POST(request: NextRequest) {
 
     try {
       // Stage 1 → 2: Scrape website
-      advanceStage(id);
+      await advanceStage(id);
       try {
         const scrapeResult = await scrapeWebsite(project.websiteUrl);
-        updateProject(id, { scrapeResult });
-        advanceStage(id); // → stage 3 (Designing)
+        await updateProject(id, { scrapeResult });
+        await advanceStage(id); // → stage 3 (Designing)
       } catch (err) {
-        setStageError(id, extractErrorMessage(err, "Scrape failed"));
+        await setStageError(id, extractErrorMessage(err, "Scrape failed"));
         return;
       }
 
       // Stage 3 → 4: Design generation
       if (!process.env.OPENAI_API_KEY) {
-        setStageError(id, "OPENAI_API_KEY is not configured — cannot generate design");
+        await setStageError(id, "OPENAI_API_KEY is not configured — cannot generate design");
         return;
       }
       try {
@@ -91,10 +91,10 @@ export async function POST(request: NextRequest) {
           proj.description,
           proj.specialRequirements
         );
-        updateProject(id, { design });
-        advanceStage(id); // → stage 4 (UI/UX)
+        await updateProject(id, { design });
+        await advanceStage(id); // → stage 4 (UI/UX)
       } catch (err) {
-        setStageError(id, extractErrorMessage(err, "Design generation failed"));
+        await setStageError(id, extractErrorMessage(err, "Design generation failed"));
         return;
       }
 
@@ -102,39 +102,39 @@ export async function POST(request: NextRequest) {
       try {
         const proj = getProject(id)!;
         const generatedCode = await generateCode(proj.design!, proj.scrapeResult!, proj.clientName);
-        updateProject(id, { generatedCode });
-        advanceStage(id); // → stage 5 (Creating Repo)
+        await updateProject(id, { generatedCode });
+        await advanceStage(id); // → stage 5 (Creating Repo)
       } catch (err) {
-        setStageError(id, extractErrorMessage(err, "Code generation failed"));
+        await setStageError(id, extractErrorMessage(err, "Code generation failed"));
         return;
       }
 
       // Stage 5 → 6: GitHub push
       if (!process.env.GITHUB_TOKEN) {
-        setStageError(id, "GITHUB_TOKEN is not configured — cannot push to GitHub");
+        await setStageError(id, "GITHUB_TOKEN is not configured — cannot push to GitHub");
         return;
       }
       try {
         const proj = getProject(id)!;
         const { repoUrl, repoFullName } = await pushToGitHub(proj.clientName, proj.generatedCode!);
-        updateProject(id, { repoUrl, repoFullName });
-        advanceStage(id); // → stage 6 (Generating Code)
+        await updateProject(id, { repoUrl, repoFullName });
+        await advanceStage(id); // → stage 6 (Generating Code)
       } catch (err) {
-        setStageError(id, extractErrorMessage(err, "GitHub push failed"));
+        await setStageError(id, extractErrorMessage(err, "GitHub push failed"));
         return;
       }
 
       // Stage 6 → 7: Advance to Deploying
-      advanceStage(id); // → stage 7 (Deploying)
+      await advanceStage(id); // → stage 7 (Deploying)
 
       // Stage 7 → 8: Deploy to GitHub Pages
       try {
         const proj = getProject(id)!;
         const { deployedUrl } = await deployToGitHubPages(proj.repoFullName!);
-        updateProject(id, { deployedUrl });
-        advanceStage(id); // → stage 8 (QA Validation)
+        await updateProject(id, { deployedUrl });
+        await advanceStage(id); // → stage 8 (QA Validation)
       } catch (err) {
-        setStageError(id, extractErrorMessage(err, "Deployment failed"));
+        await setStageError(id, extractErrorMessage(err, "Deployment failed"));
         return;
       }
 
@@ -146,12 +146,12 @@ export async function POST(request: NextRequest) {
           proj.deployedUrl!,
           proj.websiteUrl
         );
-        updateProject(id, { qaReport });
-        advanceStage(id); // → stage 9 (Fixes)
+        await updateProject(id, { qaReport });
+        await advanceStage(id); // → stage 9 (Fixes)
 
         // If no failures, skip Fixes and go to Complete
         if (qaReport.summary.fail === 0) {
-          advanceStage(id); // → stage 10 (Complete)
+          await advanceStage(id); // → stage 10 (Complete)
           return;
         }
 
@@ -168,20 +168,20 @@ export async function POST(request: NextRequest) {
             current.generatedCode!,
             current.clientName
           );
-          updateProject(id, { generatedCode: fixedCode, fixIterations: iterations });
+          await updateProject(id, { generatedCode: fixedCode, fixIterations: iterations });
 
           // Push fixes to GitHub
           const { repoUrl: fixedRepoUrl, repoFullName: fixedRepoFullName } = await pushToGitHub(
             current.clientName,
             fixedCode
           );
-          updateProject(id, { repoUrl: fixedRepoUrl, repoFullName: fixedRepoFullName });
+          await updateProject(id, { repoUrl: fixedRepoUrl, repoFullName: fixedRepoFullName });
 
           // Re-deploy
-          rewindToStage(id, 7); // back to Deploying
+          await rewindToStage(id, 7); // back to Deploying
           const { deployedUrl: fixedDeployedUrl } = await deployToGitHubPages(fixedRepoFullName);
-          updateProject(id, { deployedUrl: fixedDeployedUrl });
-          advanceStage(id); // → stage 8 (QA Validation)
+          await updateProject(id, { deployedUrl: fixedDeployedUrl });
+          await advanceStage(id); // → stage 8 (QA Validation)
 
           // Re-run QA
           qaReport = await runQaComparison(
@@ -189,18 +189,18 @@ export async function POST(request: NextRequest) {
             fixedDeployedUrl,
             current.websiteUrl
           );
-          updateProject(id, { qaReport });
-          advanceStage(id); // → stage 9 (Fixes)
+          await updateProject(id, { qaReport });
+          await advanceStage(id); // → stage 9 (Fixes)
 
           if (qaReport.summary.fail === 0) {
-            advanceStage(id); // → stage 10 (Complete)
+            await advanceStage(id); // → stage 10 (Complete)
             return;
           }
         }
 
         // Max iterations reached — leave at stage 9 (Fixes) with current QA report
       } catch (err) {
-        setStageError(id, extractErrorMessage(err, "QA/Fix cycle failed"));
+        await setStageError(id, extractErrorMessage(err, "QA/Fix cycle failed"));
       }
     } catch (err) {
       // Top-level safety net — catch any unexpected errors so they surface in the UI

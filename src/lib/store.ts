@@ -202,12 +202,12 @@ export async function getProjectAsync(id: string): Promise<StoredProject | undef
   return loadFromBlob(id);
 }
 
-export function createProject(data: {
+export async function createProject(data: {
   clientName: string;
   websiteUrl: string;
   description: string;
   specialRequirements: string | null;
-}): StoredProject {
+}): Promise<StoredProject> {
   const project: StoredProject = {
     ...data,
     id: crypto.randomUUID(),
@@ -221,29 +221,28 @@ export function createProject(data: {
     })),
   };
   cache.set(project.id, { project, at: Date.now() });
-  // Fire and forget — the blob save runs in the background
-  saveToBlob(project).catch(() => {});
+  await saveToBlob(project);
   return project;
 }
 
-export function deleteProject(id: string): boolean {
+export async function deleteProject(id: string): Promise<boolean> {
   const existed = cache.has(id);
   cache.delete(id);
-  del(blobPath(id)).catch(() => {});
+  await del(blobPath(id)).catch(() => {});
   return existed;
 }
 
-export function updateProject(id: string, updates: Partial<StoredProject>): StoredProject | null {
+export async function updateProject(id: string, updates: Partial<StoredProject>): Promise<StoredProject | null> {
   const cached = cache.get(id);
   if (!cached) return null;
   const project = cached.project;
   Object.assign(project, updates);
   cache.set(id, { project, at: Date.now() });
-  saveToBlob(project).catch(() => {});
+  await saveToBlob(project);
   return project;
 }
 
-export function setStageError(id: string, errorMessage: string): StoredProject | null {
+export async function setStageError(id: string, errorMessage: string): Promise<StoredProject | null> {
   const cached = cache.get(id);
   if (!cached) return null;
   const project = cached.project;
@@ -252,11 +251,11 @@ export function setStageError(id: string, errorMessage: string): StoredProject |
   project.pipelineStatus = "error";
   project.pipelineError = errorMessage;
   cache.set(id, { project, at: Date.now() });
-  saveToBlob(project).catch(() => {});
+  await saveToBlob(project);
   return project;
 }
 
-export function advanceStage(id: string): StoredProject | null {
+export async function advanceStage(id: string): Promise<StoredProject | null> {
   const cached = cache.get(id);
   if (!cached) return null;
   const project = cached.project;
@@ -272,11 +271,11 @@ export function advanceStage(id: string): StoredProject | null {
   }
 
   cache.set(id, { project, at: Date.now() });
-  saveToBlob(project).catch(() => {});
+  await saveToBlob(project);
   return project;
 }
 
-export function rewindToStage(id: string, stage: number): StoredProject | null {
+export async function rewindToStage(id: string, stage: number): Promise<StoredProject | null> {
   const cached = cache.get(id);
   if (!cached) return null;
   const project = cached.project;
@@ -297,6 +296,6 @@ export function rewindToStage(id: string, stage: number): StoredProject | null {
   }
 
   cache.set(id, { project, at: Date.now() });
-  saveToBlob(project).catch(() => {});
+  await saveToBlob(project);
   return project;
 }
