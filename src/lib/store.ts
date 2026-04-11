@@ -108,7 +108,7 @@ export interface StoredProject {
 // ---------------------------------------------------------------------------
 
 const BLOB_PREFIX = "starter-projects/";
-const CACHE_TTL_MS = 4_000; // 4 seconds — shorter than the 8s poll interval
+const CACHE_TTL_MS = 30_000; // 30 seconds — reduces Blob operations on Hobby plan
 
 // In-memory write-through cache (per function instance)
 const cache = new Map<string, { project: StoredProject; at: number }>();
@@ -290,6 +290,22 @@ export async function advanceStage(id: string): Promise<StoredProject | null> {
     project.stages[currentIdx + 1].status = "in_progress";
   }
 
+  cache.set(id, { project, at: Date.now() });
+  await saveToBlob(project);
+  return project;
+}
+
+/**
+ * Strip heavy intermediate data (scrapeResult, design, generatedCode) from a
+ * completed project to free Blob storage.  Keeps all metadata the dashboard needs.
+ */
+export async function stripHeavyData(id: string): Promise<StoredProject | null> {
+  const cached = cache.get(id);
+  if (!cached) return null;
+  const project = cached.project;
+  delete project.scrapeResult;
+  delete project.design;
+  delete project.generatedCode;
   cache.set(id, { project, at: Date.now() });
   await saveToBlob(project);
   return project;

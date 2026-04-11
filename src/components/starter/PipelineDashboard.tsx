@@ -3,7 +3,10 @@
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
+import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
 import AddIcon from "@mui/icons-material/Add";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import ProjectCard, { Project } from "./ProjectCard";
 
@@ -12,6 +15,7 @@ interface PipelineDashboardProps {
   onNewProject: () => void;
   onDeleteProject?: (projectId: string) => void;
   onRetryProject?: (projectId: string) => void;
+  onRefresh?: () => void;
 }
 
 export default function PipelineDashboard({
@@ -19,6 +23,7 @@ export default function PipelineDashboard({
   onNewProject,
   onDeleteProject,
   onRetryProject,
+  onRefresh,
 }: PipelineDashboardProps) {
   const activeCount = projects.filter(
     (p) => p.pipelineStatus === "in_progress"
@@ -120,6 +125,26 @@ export default function PipelineDashboard({
                 )}
               </Box>
             </Box>
+            <Box className="flex items-center gap-1.5">
+            {onRefresh && (
+              <Tooltip title="Refresh projects">
+                <IconButton
+                  onClick={onRefresh}
+                  sx={{
+                    color: (theme) =>
+                      theme.palette.mode === "dark" ? "#94a3b8" : "#64748b",
+                    "&:hover": {
+                      bgcolor: (theme) =>
+                        theme.palette.mode === "dark"
+                          ? "rgba(148,163,184,0.1)"
+                          : "rgba(100,116,139,0.08)",
+                    },
+                  }}
+                >
+                  <RefreshIcon />
+                </IconButton>
+              </Tooltip>
+            )}
             <Button
               variant="contained"
               startIcon={<AddIcon />}
@@ -150,6 +175,7 @@ export default function PipelineDashboard({
             >
               New Project
             </Button>
+            </Box>
           </Box>
         </Box>
 

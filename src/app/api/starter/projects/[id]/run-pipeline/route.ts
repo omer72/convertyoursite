@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { checkSession } from "@/lib/auth";
-import { getProject, getProjectAsync, updateProject, advanceStage, setStageError, rewindToStage } from "@/lib/store";
+import { getProject, getProjectAsync, updateProject, advanceStage, setStageError, rewindToStage, stripHeavyData } from "@/lib/store";
 import { scrapeWebsite } from "@/lib/scraper";
 import { generateDesign } from "@/lib/design-generator";
 import { generateCode } from "@/lib/code-generator";
@@ -140,6 +140,7 @@ export async function POST(
           if (qaReport.summary.fail === 0) {
             await advanceStage(id); // → stage 10 (Complete) — in_progress
             await advanceStage(id); // finalize → done
+            await stripHeavyData(id); // free Blob storage
             return;
           }
 
@@ -167,6 +168,7 @@ export async function POST(
             if (qaReport.summary.fail === 0) {
               await advanceStage(id); // → stage 10 (Complete) — in_progress
               await advanceStage(id); // finalize → done
+              await stripHeavyData(id); // free Blob storage
               return;
             }
           }

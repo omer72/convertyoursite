@@ -54,7 +54,12 @@ export default function StarterPage() {
     }
   }, []);
 
-  // Load projects once authenticated, then poll
+  // Stop polling when all projects are in a terminal state (done or error)
+  const needsPolling = projects.length === 0 || projects.some(
+    (p) => p.pipelineStatus === "in_progress"
+  );
+
+  // Load projects once authenticated, then poll only while needed
   useEffect(() => {
     if (auth !== "authenticated") return;
 
@@ -66,11 +71,13 @@ export default function StarterPage() {
       });
     });
 
+    if (!needsPolling) return;
+
     pollRef.current = setInterval(fetchProjects, POLL_INTERVAL);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [auth, fetchProjects]);
+  }, [auth, fetchProjects, needsPolling]);
 
   function handleAuthenticated() {
     setAuth("authenticated");
@@ -170,6 +177,7 @@ export default function StarterPage() {
           onNewProject={() => setView("form")}
           onDeleteProject={handleDeleteProject}
           onRetryProject={handleRetryProject}
+          onRefresh={fetchProjects}
         />
       </Box>
     </Fade>
