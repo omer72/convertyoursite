@@ -9,6 +9,8 @@ npm run dev          # Start dev server
 npm run build        # Production build
 npm run lint         # ESLint
 npm run start        # Start production server
+npm run remotion:preview   # Preview Remotion video composition
+npm run remotion:render    # Render company reel to out/company-reel.mp4
 ```
 
 No test framework is configured.
@@ -65,6 +67,8 @@ The pipeline is the core feature. It converts a client's existing website into a
 | `github-deploy.ts` | Enables GitHub Pages, polls for deployment |
 | `qa-checker.ts` | Compares original vs deployed (content, nav, images, contact, meta) |
 | `fix-generator.ts` | GPT-4o generates fixes from QA failures (up to 3 iterations) |
+| `pipeline-stages.ts` | Stage definitions and types (`PipelineStage`, `StageStatus`) |
+| `strip-markdown-fences.ts` | Strips markdown code fences from AI output |
 | `auth.ts` | Cookie-based session for /starter gate |
 
 ### API Route Patterns
@@ -73,6 +77,12 @@ The pipeline is the core feature. It converts a client's existing website into a
 - Pipeline routes set `maxDuration = 300` (5 min timeout)
 - Dynamic route params are Promise-based: `params: Promise<{ id: string }>`
 - Auth check via `checkSession()` on all starter API routes
+
+**API route structure:**
+- `api/starter/projects/route.ts` — `GET` (list/poll) and `POST` (create + start pipeline)
+- `api/starter/projects/[id]/route.ts` — `GET` single project
+- `api/starter/projects/[id]/run-pipeline/` — restart pipeline from failed stage
+- `api/starter/projects/[id]/{scrape,design,generate,push-to-github,deploy,qa,fix,stage}/` — individual stage endpoints
 
 ### Generated Sites
 

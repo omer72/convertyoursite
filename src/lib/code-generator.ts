@@ -2,6 +2,16 @@ import OpenAI from "openai";
 import type { ScrapeResult, DesignSpec, GeneratedCode } from "./store";
 import { stripMarkdownFences } from "./strip-markdown-fences";
 
+function repoSlug(clientName: string): string {
+  return (
+    clientName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 100) + "-site"
+  );
+}
+
 const CODE_GEN_SYSTEM_PROMPT = `You are an expert Next.js developer. Given a design spec and scraped website content, generate a complete static Next.js site.
 
 Return ONLY valid JSON with this structure (no markdown, no explanation):
@@ -28,12 +38,13 @@ Requirements:
 - Include a simple footer with contact info from scrape data
 - All image src attributes should use the original scraped URLs
 - Do NOT use any external component libraries — just Tailwind CSS
-- The next.config.mjs MUST use this exact format (no defineConfig, no imports from 'next'):
+- The next.config.mjs MUST include the basePath provided in the prompt. The exact format MUST be (no defineConfig, no imports from 'next'):
   \`\`\`
   /** @type {import('next').NextConfig} */
-  const nextConfig = { output: "export", images: { unoptimized: true } };
+  const nextConfig = { output: "export", basePath: "/<REPO_NAME>", images: { unoptimized: true } };
   export default nextConfig;
   \`\`\`
+  Replace <REPO_NAME> with the actual repo name provided in the prompt.
 - The postcss.config.js MUST use this exact format (CommonJS, NOT .mjs):
   \`\`\`
   module.exports = { plugins: { tailwindcss: {}, autoprefixer: {} } };
@@ -44,7 +55,9 @@ Requirements:
   module.exports = { content: ["./src/**/*.{js,ts,jsx,tsx}"], theme: { extend: {} }, plugins: [] };
   \`\`\`
 - Do NOT use \`next/image\` — use plain \`<img>\` tags instead (next/image requires a server and is incompatible with static export)
-- Use TypeScript for all .tsx/.ts files but config files (next.config.mjs, postcss.config.js, tailwind.config.js) must be plain JavaScript`;
+- Use TypeScript for all .tsx/.ts files but config files (next.config.mjs, postcss.config.js, tailwind.config.js) must be plain JavaScript
+- For ALL internal navigation links, use \`<Link>\` from "next/link" with paths like "/about", "/contact" etc. Next.js will automatically prepend the basePath. Do NOT manually prepend the basePath in Link href values.
+- For any programmatic navigation, use \`useRouter\` from "next/navigation" — it also respects basePath automatically.`;
 
 export async function generateCode(
   design: DesignSpec,
@@ -60,7 +73,14 @@ export async function generateCode(
 
   const contentSummary = buildContentSummary(scrapeResult);
 
+  const slug = repoSlug(clientName);
+
   const userPrompt = `Generate a complete Next.js static site for "${clientName}".
+
+## GitHub Pages Deployment
+This site will be deployed to GitHub Pages at: https://<user>.github.io/${slug}/
+The repo name is: ${slug}
+You MUST set basePath: "/${slug}" in next.config.mjs so all assets and links work correctly.
 
 ## Design Spec
 ${JSON.stringify(design, null, 2)}

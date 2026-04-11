@@ -30,7 +30,8 @@ Rules:
 - Only modify files that need changes
 - Use the same tech stack (Next.js 14 App Router, Tailwind CSS v3, TypeScript)
 - Every .tsx file MUST use \`export default function\` syntax and start with \`import React from "react";\`
-- Preserve all existing working functionality`;
+- Preserve all existing working functionality
+- IMPORTANT: The site is deployed to GitHub Pages under a subpath. The next.config.mjs has a basePath set — do NOT remove or change it. All internal links must use \`<Link>\` from "next/link" (which auto-prepends basePath). Do NOT manually prepend the basePath in href values.`;
 
 export async function generateFixes(
   qaReport: QaReport,
