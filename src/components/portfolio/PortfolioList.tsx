@@ -73,6 +73,20 @@ const projects: PortfolioProject[] = [
     },
     techStack: ["Next.js", "Netlify", "A11y"],
   },
+  {
+    id: "apartment-3d",
+    clientName: "Interactive 3D Apartment",
+    role: "3D Floor Plan Visualization",
+    description:
+      "Turned a 2D apartment floor plan into an interactive 3D model with orbit, top-down and walkthrough views, adjustable wall height, and labeled room dimensions in Hebrew RTL.",
+    result: "Interactive Demo",
+    liveUrl: "/apartment.html",
+    image: {
+      src: `${basePath}/images/portfolio/apartment-3d.webp`,
+      alt: "Interactive 3D apartment floor plan",
+    },
+    techStack: ["Three.js", "WebGL", "RTL"],
+  },
 ];
 
 function ScrollReveal({ children }: { children: React.ReactNode }) {
